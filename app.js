@@ -6,7 +6,7 @@ form.addEventListener('submit', async (e) => {
   const data = {};
   formData.forEach((value, key) => data[key] = value);
 
-  const res = await fetch('https://script.google.com/macros/s/AKfycbxJozzB4z0HqHRmF5shaLzUeA6Ok2wbeRStRfCpOYnF1TFJs2fvOKqTEvsnSJC1E1c3/exec', {
+  const res = await fetch('https://script.google.com/macros/s/AKfycbx8TUGDtD_731KcutDz4a86yFPf9anyLHLaxdZ1KJdhOyqEkLeYRJkONLxP5BpgRVx4/exec', {
     method: 'POST',
     body: JSON.stringify(data)
   });
