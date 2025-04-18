@@ -5,17 +5,17 @@
   <title>申込フォーム</title>
 </head>
 <body>
-  <h2>お名前・生年月日・電話番号などの入力</h2>
+  <h2>申込フォーム</h2>
   <form id="kycForm">
     <label>お名前：</label><br>
     <input type="text" name="name"><br><br>
-    
+
     <label>生年月日：</label><br>
     <input type="date" name="birthDate"><br><br>
-    
+
     <label>電話番号：</label><br>
     <input type="text" name="phone"><br><br>
-    
+
     <label>メールアドレス：</label><br>
     <input type="email" name="email"><br><br>
 
@@ -28,26 +28,22 @@
     <button type="submit">送信</button>
   </form>
 
+  <!-- ↓↓↓ ここに直接JSを書く！ -->
   <script>
     const form = document.getElementById('kycForm');
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const formData = new FormData(form);
-      const data = {};
-      formData.forEach((value, key) => data[key] = value);
 
       try {
         const res = await fetch('https://script.google.com/macros/s/AKfycbx8TUGDtD_731KcutDz4a86yFPf9anyLHLaxdZ1KJdhOyqEkLeYRJkONLxP5BpgRVx4/exec', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(data)
+          body: formData
         });
 
-        const result = await res.json();
-        if (result.status === "ok") {
+        const result = await res.text();
+        if (res.ok) {
           alert("送信完了しました！");
           form.reset();
         } else {
@@ -61,4 +57,3 @@
   </script>
 </body>
 </html>
-
