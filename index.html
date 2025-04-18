@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>申込フォーム</title>
+</head>
+<body>
+  <h2>お名前・生年月日・電話番号などの入力</h2>
+  <form id="kycForm">
+    <label>お名前：</label><br>
+    <input type="text" name="name"><br><br>
+    
+    <label>生年月日：</label><br>
+    <input type="date" name="birthDate"><br><br>
+    
+    <label>電話番号：</label><br>
+    <input type="text" name="phone"><br><br>
+    
+    <label>メールアドレス：</label><br>
+    <input type="email" name="email"><br><br>
+
+    <label>郵便番号：</label><br>
+    <input type="text" name="zipcode"><br><br>
+
+    <label>住所：</label><br>
+    <input type="text" name="address"><br><br>
+
+    <button type="submit">送信</button>
+  </form>
+
+  <script>
+    const form = document.getElementById('kycForm');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const data = {};
+      formData.forEach((value, key) => data[key] = value);
+
+      try {
+        const res = await fetch('https://script.google.com/macros/s/AKfycbxx6GNpbs_kJgT2Ob4CNLGubzT_Yz-JHKCE4ZJmZg1tSfD8ogZu8JFW78Q1Z5rZO6Im/exec', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+
+        const result = await res.json();
+        if (result.status === "ok") {
+          alert("送信完了しました！");
+          form.reset();
+        } else {
+          alert("送信に失敗しました");
+        }
+      } catch (error) {
+        alert("通信エラーが発生しました");
+        console.error(error);
+      }
+    });
+  </script>
+</body>
+</html>
+
