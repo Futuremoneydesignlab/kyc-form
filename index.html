@@ -32,13 +32,12 @@
     const form = document.getElementById('kycForm');
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-
       const formData = new FormData(form);
       const data = {};
       formData.forEach((value, key) => data[key] = value);
 
       try {
-        const res = await fetch('https://script.google.com/macros/s/AKfycbyucaB09zgf45IZsgfE2dyCADIa_MD6_lI0G0nB7HFwaxUpQBTEbVF252sgH9f7A8g4/exec', {
+        const res = await fetch('https://script.google.com/macros/s/AKfycbxBDHvahTlrJQUtTuBwicUt_NubTqJfzGou4ikuTHJzS2mC7sHxKyjyaxjMrG7W2vS-/exec', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
