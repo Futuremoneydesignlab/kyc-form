@@ -1,0 +1,121 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>KYCフォーム（完全版）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- スタイル -->
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f4f4f4;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    form {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      width: 100%;
+      background-color: #2c3e50;
+      color: #fff;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .progress-bar {
+      height: 6px;
+      background-color: #2c3e50;
+      animation: progress 1.2s linear forwards;
+    }
+    @keyframes progress {
+      from { width: 0%; }
+      to { width: 100%; }
+    }
+  </style>
+
+  <!-- OCR -->
+  <script src="https://unpkg.com/tesseract.js@v4.0.2/dist/tesseract.min.js"></script>
+
+  <!-- reCAPTCHA v2 -->
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+</head>
+<body>
+  <div class="progress-bar"></div>
+  <h1>KYC申込フォーム</h1>
+
+  <form id="kyc-form" action="https://script.google.com/macros/s/AKfycbwrCn0HoaAekKdFdDy9GOg7C5gGakPeGASK0pGNaHMGnRewOntYNca33gQeom3nB-ju/exec" method="POST">
+    <label>氏名</label>
+    <input type="text" name="name" required>
+
+    <label>メールアドレス</label>
+    <input type="email" name="email" required>
+
+    <label>電話番号</label>
+    <input type="tel" name="phone" required>
+
+    <label>生年月日</label>
+    <input type="date" name="birthDate" required>
+
+    <label>住所</label>
+    <input type="text" name="address" id="address" required>
+
+    <label>郵便番号</label>
+    <input type="text" id="postcode" placeholder="例: 1000001">
+
+    <label>身分証画像</label>
+    <input type="file" id="idImage" accept="image/*">
+
+    <label>身分証番号（OCR自動入力）</label>
+    <input type="text" name="id_number" id="id_number">
+
+    <div class="g-recaptcha" data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"></div>
+
+    <button type="submit">送信</button>
+  </form>
+
+  <script>
+    // OCR機能
+    document.getElementById('idImage').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      const { createWorker } = Tesseract;
+      const worker = await createWorker("jpn");
+      const { data: { text } } = await worker.recognize(file);
+      document.getElementById("id_number").value = text.match(/[A-Z]{2}\d{7}/)?.[0] || "";
+      await worker.terminate();
+    });
+
+    // 郵便番号 → 住所自動入力
+    document.getElementById('postcode').addEventListener('blur', async (e) => {
+      const zip = e.target.value;
+      const res = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${zip}`);
+      const data = await res.json();
+      if (data.results) {
+        const addr = data.results[0];
+        document.getElementById("address").value = addr.address1 + addr.address2 + addr.address3;
+      }
+    });
+  </script>
+</body>
+</html>
