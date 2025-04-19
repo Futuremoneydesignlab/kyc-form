@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>完全統合申込フォーム</title>
+<style>
+:root { --primary-color: #3d5a80; --secondary-color: #98c1d9; --error-color: #e74c3c; --success-color: #2ecc71; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f7f9fc; line-height: 1.6; color: #333; }
+header { background: var(--primary-color); color: white; padding: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
+.progress-container { height: 8px; background: #e0e0e0; border-radius: 4px; margin: 15px 0; overflow: hidden; }
+.progress-bar { height: 100%; background: var(--primary-color); transition: width 0.3s ease; }
+.step { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; display: none; }
+.step.active { display: block; animation: fadeIn 0.3s; }
+label { display: block; margin: 15px 0 5px; font-weight: 500; position: relative; }
+input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; margin-bottom: 5px; transition: all 0.3s; }
+input:focus, select:focus, textarea:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 5px rgba(61,90,128,0.2); }
+.button-group { display: flex; gap: 10px; margin-top: 25px; }
+button { flex: 1; padding: 14px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+.prev-btn { background: #e0e0e0; color: #333; }
+.next-btn { background: var(--primary-color); color: white; }
+button[type="submit"] { background: var(--success-color); }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+.error-message { color: var(--error-color); font-size: 0.9em; margin-top: 3px; display: none; }
+input:invalid, select:invalid { border-color: var(--error-color); }
+.network-status { position: fixed; bottom: 20px; right: 20px; padding: 10px 20px; border-radius: 25px; display: none; z-index: 1000; }
+.online { background: var(--success-color); }
+.offline { background: var(--error-color); }
+.preview-sidebar { position: fixed; top: 100px; right: 20px; width: 300px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 15px rgba(0,0,0,0.1); z-index: 999; max-height: 80vh; overflow-y: auto; }
+.preview-sidebar h3 { color: var(--primary-color); margin-bottom: 15px; }
+#previewContent ul { list-style: none; padding: 0; }
+#previewContent li { margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 4px; word-break: break-word; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 480px) {
+  .container { margin: 10px auto; padding: 0 10px; }
+  .step { padding: 20px; }
+  button { padding: 12px; font-size: 14px; }
+  input, select, textarea { font-size: 14px; padding: 10px; }
+  .button-group { flex-direction: column; }
+  button { width: 100%; margin: 5px 0; }
+  input[type="file"] { font-size: 12px; }
+  .preview-sidebar { display: none; }
+}
+</style>
+<script src="https://www.google.com/recaptcha/api.js?render=6Ldt9BwrAAAAAFcxv593i86WyBKetcwrGdWecK09"></script>
+</head>
+<body>
+<header>
+  <h1>STEP <span id="current-step">1</span>/8</h1>
+  <div class="progress-container"><div class="progress-bar" style="width: 12.5%"></div></div>
+</header>
+<div class="container">
+  <form id="mainForm">
+    <!-- STEP 1 -->
+    <div class="step active" id="step1">
+      <h2>STEP1｜基本情報の入力</h2>
+      <label>担当者名<input type="text" name="staff" required></label>
+      <label>紹介コード<input type="text" name="ref_code"></label>
+      <label>申込日<input type="date" name="apply_date" required></label>
+      <label>名<input type="text" name="first_name" required></label>
+      <label>姓<input type="text" name="last_name" required></label>
+      <label>メイ（カナ）<input type="text" name="first_kana"></label>
+      <label>セイ（カナ）<input type="text" name="last_kana"></label>
+      <label>性別<select name="gender" required><option value="">選択</option><option>男性</option><option>女性</option><option>その他</option></select></label>
+      <label>生年月日<input type="date" name="birth" required></label>
+      <label>電話番号<input type="tel" name="phone" required></label>
+      <label>メールアドレス<input type="email" name="email" required></label>
+      <label>郵便番号<input type="text" name="postcode" onblur="lookupAddress()" required></label>
+      <label>都道府県<input type="text" name="prefecture" required></label>
+      <label>市区町村<input type="text" name="city" required></label>
+      <label>番地<input type="text" name="street" required></label>
+      <label>建物名<input type="text" name="building"></label>
+      <div class="button-group"><button type="button" class="next-btn" onclick="nextStep()">次へ</button></div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step" id="step2">
+      <h2>STEP2｜本人確認情報</h2>
+      <label>身分証の種類<select name="id_type" required><option value="">選択</option><option>パスポート</option><option>運転免許証</option><option>マイナンバーカード</option><option>在留カード</option></select></label>
+      <label>身分証番号<input type="text" name="id_number" required></label>
+      <label>発行日<input type="date" name="id_issue_date" required></label>
+      <label>有効期限<input type="date" name="id_expiry_date" required></label>
+      <label>マイナンバー<input type="text" name="my_number"></label>
+      <label>身分証明書（表）<input type="file" name="id_front" accept="image/*"></label>
+      <label>身分証明書（裏）<input type="file" name="id_back" accept="image/*"></label>
+<label>住居証明書（表）<input type="file" name="residence_proof_front" accept="image/*,application/pdf"></label>
+<label>住居証明書（裏）<input type="file" name="residence_proof_back" accept="image/*,application/pdf"></label>
+<p style="font-size: 0.85em; color: #555; margin-top: 20px;">
+  ご提出いただく書類データ（身分証・住居証明等）は、個人情報保護法および関連法令に基づき、厳重に管理いたします。<br>
+  当フォームはSSL暗号化通信により保護されており、収集されたデータは本人確認・所定の審査目的にのみ使用され、目的外の利用・第三者提供は一切行いません。
+</p>
+
+      <div class="button-group"><button type="button" class="prev-btn" onclick="prevStep()">戻る</button><button type="button" class="next-btn" onclick="nextStep()">次へ</button></div>
+    </div>
+
+    <!-- STEP 3 -->
+<div class="step" id="step3">
+  <h2>STEP3｜勤務情報と資産背景</h2>
+
+  <label>勤務先名
+    <input type="text" name="employer_name" required>
+  </label>
+
+  <label>職業（業種）
+    <select name="job_industry" required>
+      <option value="">選択してください</option>
+      <option>金融・保険</option>
+      <option>IT・通信</option>
+      <option>医療・福祉</option>
+      <option>建設・不動産</option>
+      <option>製造・工業</option>
+      <option>運輸・物流</option>
+      <option>販売・サービス</option>
+      <option>公務員</option>
+      <option>その他</option>
+    </select>
+  </label>
+
+  <label>職業（役職）
+    <select name="job_position" required>
+      <option value="">選択してください</option>
+      <option>一般社員</option>
+      <option>主任・係長</option>
+      <option>課長・部長</option>
+      <option>役員</option>
+      <option>自営業</option>
+      <option>無職</option>
+      <option>その他</option>
+    </select>
+  </label>
+
+  <label>勤務先 郵便番号
+    <input type="text" name="employer_postcode" maxlength="7">
+  </label>
+
+  <label>勤務先 都道府県
+    <input type="text" name="employer_prefecture">
+  </label>
+
+  <label>勤務先 市区町村
+    <input type="text" name="employer_city">
+  </label>
+
+  <label>勤務先 番地
+    <input type="text" name="employer_street">
+  </label>
+
+  <label>勤務先 建物名
+    <input type="text" name="employer_building">
+  </label>
+
+  <label>年収（万円）
+    <input type="number" name="income" required>
+  </label>
+
+  <label>勤続年数（年）
+    <input type="number" name="years_of_service" required>
+  </label>
+
+  <label>資金調達方法
+    <select name="fund_source" required>
+      <option value="">選択してください</option>
+      <option>給与所得</option>
+      <option>事業所得</option>
+      <option>不動産所得</option>
+      <option>相続・贈与</option>
+      <option>投資収益</option>
+      <option>退職金</option>
+      <option>その他</option>
+    </select>
+  </label>
+
+  <div class="button-group">
+    <button type="button" class="prev-btn" onclick="prevStep()">戻る</button>
+    <button type="button" class="next-btn" onclick="nextStep()">次へ</button>
+  </div>
+</div>
+
+<!-- STEP 4 -->
+<div class="step" id="step4">
+  <h2>STEP4｜投資内容・契約条件</h2>
+
+  <label>投資プラン
+    <select name="investment_plan" required>
+      <option value="">選択してください</option>
+      <option value="エボリューション">エボリューション</option>
+      <option value="S&P500">S&P500</option>
+      <option value="プラチナプラン">プラチナプラン</option>
+      <option value="確定利回りポートフォリオ">確定利回りポートフォリオ</option>
+      <option value="その他">その他</option>
+    </select>
+  </label>
+
+  <label>投資期間（年）
+    <input type="number" name="investment_period" min="1" max="25" required>
+  </label>
+
+  <label>年間（一括）拠出額（USD）
+    <input type="number" name="annual_amount" required>
+  </label>
+
+  <label>通貨
+    <select name="currency" required>
+      <option value="">選択してください</option>
+      <option value="USD">USD</option>
+      <option value="EUR">EUR</option>
+      <option value="GBP">GBP</option>
+    </select>
+  </label>
+
+  <label>支払頻度
+    <select name="payment_frequency" required>
+      <option value="">選択してください</option>
+      <option value="年1回">年1回</option>
+      <option value="半年ごと">半年ごと</option>
+      <option value="四半期ごと">四半期ごと</option>
+      <option value="毎月">毎月</option>
+    </select>
+  </label>
+
+  <label>支払方法
+    <select name="payment_method" required>
+      <option value="">選択してください</option>
+      <option value="クレジットカード">クレジットカード</option>
+      <option value="銀行振込">銀行振込</option>
+    </select>
+  </label>
+
+  <label>カード種類（※カード払いの場合）
+    <select name="card_type">
+      <option value="">選択してください</option>
+      <option value="VISA">VISA</option>
+      <option value="MasterCard">MasterCard</option>
+      <option value="AMEX">AMEX</option>
+      <option value="JCB">JCB</option>
+    </select>
+  </label>
+
+  <label>カード番号（※カード払いの場合）
+    <input type="text" name="card_number" maxlength="19">
+  </label>
+
+  <label>カード有効期限（MM/YY）
+    <input type="text" name="card_expiry" placeholder="MM/YY">
+  </label>
+
+  <div class="button-group">
+    <button type="button" class="prev-btn" onclick="prevStep()">戻る</button>
+    <button type="button" class="next-btn" onclick="nextStep()">次へ</button>
+  </div>
+</div>
+
+<!-- STEP 5 -->
+<div class="step" id="step5">
+  <h2>STEP5｜銀行情報・支払元確認</h2>
+
+  <label>銀行名
+    <input type="text" name="bank_name" required>
+  </label>
+
+  <label>支店名または支店番号
+    <input type="text" name="branch_name" required>
+  </label>
+
+  <label>口座開設日
+    <input type="date" name="account_open_date">
+  </label>
+
+  <label>口座名義（カタカナ）
+    <input type="text" name="account_holder_kana" required>
+  </label>
+
+  <label>口座番号
+    <input type="text" name="account_number" required>
+  </label>
+
+  <label>年収（資金額）
+    <input type="number" name="account_income" required>
+  </label>
+
+  <div class="button-group">
+    <button type="button" class="prev-btn" onclick="prevStep()">戻る</button>
+    <button type="button" class="next-btn" onclick="nextStep()">次へ</button>
+  </div>
+</div>
+
+<!-- STEP 6 -->
+<div class="step" id="step6">
+  <h2>STEP6｜受益者情報（任意）</h2>
+
+  <label>受益者氏名（名）
+    <input type="text" name="beneficiary_first_name">
+  </label>
+
+  <label>受益者氏名（姓）
+    <input type="text" name="beneficiary_last_name">
+  </label>
+
+  <label>受益者フリガナ（メイ）
+    <input type="text" name="beneficiary_first_kana">
+  </label>
+
+  <label>受益者フリガナ（セイ）
+    <input type="text" name="beneficiary_last_kana">
+  </label>
+
+  <label>性別
+    <select name="beneficiary_gender">
+      <option value="">選択してください</option>
+      <option value="男性">男性</option>
+      <option value="女性">女性</option>
+      <option value="その他">その他</option>
+    </select>
+  </label>
+
+  <label>生年月日
+    <input type="date" name="beneficiary_birth">
+  </label>
+
+  <label>あなたとの関係
+    <select name="beneficiary_relation">
+      <option value="">選択してください</option>
+      <option value="配偶者">配偶者</option>
+      <option value="子">子</option>
+      <option value="親">親</option>
+      <option value="兄弟姉妹">兄弟姉妹</option>
+      <option value="その他">その他</option>
+    </select>
+  </label>
+
+  <div class="button-group">
+    <button type="button" class="prev-btn" onclick="prevStep()">戻る</button>
+    <button type="button" class="next-btn" onclick="nextStep()">次へ</button>
+  </div>
+</div>
+
+<!-- STEP 7 -->
+<div class="step" id="step7">
+  <h2>STEP7｜医療・米国情報・PEPs確認</h2>
+
+  <label>1. 保険申込・査定で拒否または延期されたことはありますか？
+    <select name="q1_medical_decline" required>
+      <option value="">選択してください</option>
+      <option value="はい">はい</option>
+      <option value="いいえ">いいえ</option>
+    </select>
+  </label>
+
+  <label>2. 以下の病気に罹患・治療歴がありますか？<br>（心臓・脳卒中・高血圧・腫瘍・癌・糖尿病など）
+    <select name="q2_serious_disease" required>
+      <option value="">選択してください</option>
+      <option value="はい">はい</option>
+      <option value="いいえ">いいえ</option>
+    </select>
+  </label>
+
+  <label>3. エイズまたはその関連症状の診断・治療歴はありますか？
+    <select name="q3_aids" required>
+      <option value="">選択してください</option>
+      <option value="はい">はい</option>
+      <option value="いいえ">いいえ</option>
+    </select>
+  </label>
+
+  <label>4. 危険なスポーツや活動に参加したことがありますか？または参加予定がありますか？<br>（例：スカイダイビング、自動車レース等）
+    <select name="q4_danger_sports" required>
+      <option value="">選択してください</option>
+      <option value="はい">はい</option>
+      <option value="いいえ">いいえ</option>
+    </select>
+  </label>
+
+  <label>※ 上記のいずれかに「はい」と答えた場合は、かかりつけ医師の情報を記入してください。
+    <textarea name="doctor_contact" placeholder="氏名・住所・電話番号・FAXなど"></textarea>
+  </label>
+
+  <label>あなたは米国市民、または税務上の米国居住者ですか？
+    <select name="us_tax_resident" required>
+      <option value="">選択してください</option>
+      <option value="はい">はい</option>
+      <option value="いいえ">いいえ</option>
+    </select>
+  </label>
+
+  <label>政府・国家元首・政治的に影響力のある人物またはその家族に該当しますか？
+    <select name="pep_status" required>
+      <option value="">選択してください</option>
+      <option value="はい">はい</option>
+      <option value="いいえ">いいえ</option>
+    </select>
+  </label>
+
+  <div class="button-group">
+    <button type="button" class="prev-btn" onclick="prevStep()">戻る</button>
+    <button type="button" class="next-btn" onclick="nextStep()">次へ</button>
+  </div>
+</div>
+
+
+<!-- STEP 8 -->
+<div class="step" id="step8">
+  <h2>STEP8｜利用規約・同意・送信確認</h2>
+
+  <div class="terms-box" style="margin-bottom: 20px; line-height: 1.8;">
+    <h3>＜個人情報保護方針＞</h3>
+    <ul>
+      <li>1. 本申込書にていただいた個人情報は、申込とお取引いただいた会社のアフターサービス・ご案内にのみ使用します。</li>
+      <li>2. 本申込書にていただいた個人情報は、適正に管理・保護し、目的以外の利用や第三者への情報提供は行いません。</li>
+      <li>3. いただいた個人情報の照会、修正、削除については、担当者にお問い合わせください。</li>
+    </ul>
+
+    <h3 style="margin-top: 20px;">＜宣誓＞</h3>
+    <ul>
+      <li>1. 私は、自主的にITA International Holdingsが販売する商品へ投資することを確認いたします。</li>
+      <li>2. 私は、契約書作成に伴う上記個人情報の転記等を了解いたします。</li>
+      <li>3. 私は、このフォームに記載した情報には不備がなく、虚偽がないことを宣誓します。</li>
+      <li>不備または虚偽が判明した場合、30日以内に新たな自己証明書を提出し、必要な税務情報を関連当局と共有することに同意します。</li>
+    </ul>
+  </div>
+<details style="margin-top: 25px; border: 1px solid #ccc; border-radius: 8px; padding: 15px; background: #f9f9f9;">
+  <summary style="cursor: pointer; font-weight: bold; color: var(--primary-color); font-size: 16px;">
+    ▶ プライバシーポリシーを表示する
+  </summary>
+  <div style="margin-top: 15px; line-height: 1.8; font-size: 14px;">
+    <h3>1. 個人情報の利用目的</h3>
+    <p>
+      本フォームで取得する個人情報は、以下の目的のために使用されます：<br>
+      ・本人確認、KYCプロセスの実施<br>
+      ・お申込み内容に基づく書類作成、商品契約手続き<br>
+      ・顧客対応、アフターサポート、緊急時の連絡<br>
+      ・法令に基づく記録・管理・報告の実施
+    </p>
+
+    <h3>2. 安全管理措置</h3>
+    <p>
+      取得した個人情報は、SSL暗号化通信による送信、アクセスログの管理、保存データの制限管理など、適切な技術的・組織的安全管理措置を講じたうえで取り扱います。
+    </p>
+
+    <h3>3. 委託・第三者提供について</h3>
+    <p>
+      個人情報は、業務委託先（書類作成代行、管理台帳運用等）に提供する場合がありますが、いずれも契約により適正な管理を義務付けています。<br>
+      また、本人の同意がある場合または法令に基づく場合を除き、第三者への提供は行いません。
+    </p>
+
+    <h3>4. 保管および削除</h3>
+    <p>
+      個人情報は、契約締結後または目的達成後、法定保管期間を除き、当社の定める安全な方法により消去・破棄されます。
+    </p>
+
+    <h3>5. 開示・訂正・削除のご請求</h3>
+    <p>
+      ご本人からのご請求により、保有する個人情報の開示・訂正・利用停止・削除に対応いたします。ご希望の方は下記よりご連絡ください。
+    </p>
+
+    <h3>6. お問い合わせ窓口</h3>
+    <p>
+      個人情報の取り扱いに関するご相談・苦情は以下のサポート窓口にて承ります。<br>
+      【お客様サポートLINE】<br>
+      → ご利用中のLINEチャットよりお問い合わせください。<br>
+      （受付時間：平日 10:00〜19:00／年末年始を除く）
+    </p>
+
+    <p style="margin-top: 10px;">制定日：2025年4月1日<br>改訂日：2025年4月19日</p>
+  </div>
+</details>
+
+  <label><input type="checkbox" name="agreement" required> 上記の利用規約および宣誓内容に同意します</label>
+
+  <div class="button-group" style="margin-top: 20px;">
+    <button type="button" class="prev-btn" onclick="prevStep()">戻る</button>
+    <button type="submit" class="next-btn">送信する</button>
+ </div>
+    </div>
+  </form>
+</div>
+<div class="preview-sidebar" id="previewSidebar"><h3>入力内容プレビュー</h3><div id="previewContent"></div></div>
+<div id="networkStatus" class="network-status"></div>
+<script>
+let currentStep = 1, totalSteps = 8;
+function updateStep(){document.querySelectorAll('.step').forEach(s=>s.classList.remove('active')),document.getElementById(`step${currentStep}`).classList.add('active'),document.getElementById('current-step').textContent=currentStep,updateProgress(),saveFormData(),generatePreview();}
+function updateProgress(){document.querySelector('.progress-bar').style.width=`${((currentStep-1)/(totalSteps-1))*100}%`;}
+async function saveFormData(){const e=new FormData(document.getElementById("mainForm")),t={};for(const[n,s]of e.entries())s instanceof File?t[n]=await toBase64(s):t[n]=s;localStorage.setItem("formData",JSON.stringify(t)),showSaveNotification();}
+function toBase64(e){return new Promise((t,n)=>{const s=new FileReader;s.readAsDataURL(e),s.onload=()=>t(s.result),s.onerror=e=>n(e);});}
+function restoreFormData(){const e=localStorage.getItem("formData");if(e){const t=JSON.parse(e);Object.entries(t).forEach(([e,n])=>{const s=document.querySelector(`[name="${e}"]`);s&&"file"!==s.type&&(s.value=n);});}}
+function nextStep(){validateStep(currentStep)&&currentStep<totalSteps&&(currentStep++,updateStep());}
+function prevStep(){currentStep>1&&(currentStep--,updateStep());}
+function validateStep(e){let t=!0;const n=document.getElementById(`step${e}`).querySelectorAll("input, select, textarea");return n.forEach(n=>{n.required&&!n.checkValidity()&&(showValidationError(n),t=!1)}),t;}
+function showValidationError(e){let t=e.nextElementSibling;(!t||!t.classList.contains("error-message"))&&((t=document.createElement("span")).className="error-message",e.parentNode.insertBefore(t,e.nextSibling)),t.textContent=e.validationMessage,t.style.display="block",e.style.borderColor="var(--error-color)";}
+function lookupAddress(){const e=document.querySelector('[name="postcode"]').value.replace(/-/g,"");7===e.length&&fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${e}`).then(e=>e.json()).then(e=>{e.results&&(document.querySelector('[name="prefecture"]').value=e.results[0].address1,document.querySelector('[name="city"]').value=e.results[0].address2+e.results[0].address3);});}
+function generatePreview(){const e=new FormData(document.getElementById("mainForm")),t=['<ul>'];e.forEach((e,n)=>{"object"!=typeof e&&e&&t.push(`<li><strong>${n}</strong>: ${e}</li>`)}),t.push("</ul>"),document.getElementById("previewContent").innerHTML=t.join("");}
+function initNetworkMonitoring(){updateNetworkStatus(),window.addEventListener("online",updateNetworkStatus),window.addEventListener("offline",updateNetworkStatus);}
+function updateNetworkStatus(){const e=document.getElementById("networkStatus");e.textContent=navigator.onLine?"オンライン":"オフライン - データは自動保存されます",e.className=`network-status ${navigator.onLine?"online":"offline"}`,e.style.display="block",setTimeout(()=>e.style.display="none",5e3);}
+function showSaveNotification(){const e=document.getElementById("networkStatus");e.textContent=`自動保存済み ${new Date().toLocaleTimeString()}`,e.className="network-status online",e.style.display="block",setTimeout(()=>e.style.display="none",2e3);}
+window.addEventListener("DOMContentLoaded",()=>{restoreFormData(),updateProgress(),initNetworkMonitoring(),document.querySelectorAll("input, select, textarea").forEach(e=>{e.addEventListener("input",()=>{validateField(e),generatePreview();});}),generatePreview(),setInterval(saveFormData,3e4);});
+function validateField(e){const t=e.nextElementSibling;e.checkValidity()?(e.style.borderColor="#ddd",t&&(t.style.display="none")):(e.style.borderColor="var(--error-color)",t&&(t.style.display="block"));}
+window.addEventListener("beforeunload",e=>{document.querySelectorAll(":invalid").length>0&&(e.preventDefault(),e.returnValue="入力中のデータがあります");});
+document.getElementById("mainForm").addEventListener("submit",async e=>{e.preventDefault();if(validateStep(currentStep)){const t=document.querySelector('button[type="submit"]');t.disabled=!0,t.textContent="送信中...";try{const n=await new Promise((e,t)=>{gtcha.ready(()=>{grecaptcha.execute("6Ldt9BwrAAAAAFcxv593i86WyBKetcwrGdWecK09",{action:"submit"}).then(e).catch(t);});}),s=new FormData(document.getElementById("mainForm"));s.append("g-recaptcha-response",n);const o=await fetch("https://script.google.com/macros/s/AKfycbxsxZHf-Jui8AcFGV45edJi1tRpnpKhURlbCm3DV6JaCAmWvzoUupQYFwj-LjoAxrvf/exec",{method:"POST",body:s}),c=await o.json();if("success"===c.status){localStorage.removeItem("formData"),window.location.href="/thankyou.html";}else throw new Error(c.message||"送信失敗");}catch(e){console.error("送信エラー:",e),alert(`エラー: ${e.message}`);}finally{t.disabled=!1,t.textContent="送信する";}}});
+</script>
+</body>
+</html>
