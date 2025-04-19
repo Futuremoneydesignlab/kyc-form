@@ -162,6 +162,17 @@ button[type="submit"] {
   .step { padding: 1rem; }
   button { padding: 0.8rem; }
 }
+input:invalid, select:invalid, textarea:invalid {
+  border-color: var(--error-color) !important;
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
 </style>
 <script src="https://www.google.com/recaptcha/api.js?render=6Ldt9BwrAAAAAFcxv593i86WyBKetcwrGdWecK09"></script>
 </head>
@@ -618,6 +629,56 @@ function updateProgress() {
   document.querySelector('.progress-bar').style.width = `${progress}%`;
 }
 
+// 次へボタン
+function nextStep() {
+  if (validateStep(currentStep)) {
+    if (currentStep < TOTAL_STEPS) {
+      currentStep++;
+      updateStep();
+    }
+  } else {
+    document.getElementById(`step${currentStep}`)
+      .querySelectorAll(':invalid')
+      .forEach(el => el.style.borderColor = 'var(--error-color)');
+  }
+}
+
+// 戻るボタン
+function prevStep() {
+  if (currentStep > 1) {
+    currentStep--;
+    updateStep();
+  }
+}
+
+// ステップのバリデーション
+function validateStep(step) {
+  let isValid = true;
+  const currentStepEl = document.getElementById(`step${step}`);
+  const inputs = currentStepEl.querySelectorAll('input, select, textarea');
+
+  inputs.forEach(input => {
+    if (input.required && !input.checkValidity()) {
+      showValidationError(input);
+      isValid = false;
+    }
+  });
+  return isValid;
+}
+
+// エラーメッセージ表示
+function showValidationError(element) {
+  let error = element.nextElementSibling;
+  if (!error || !error.classList.contains('error-message')) {
+    error = document.createElement('span');
+    error.className = 'error-message active';
+    element.parentNode.insertBefore(error, element.nextSibling);
+  }
+  error.textContent = element.validationMessage;
+  error.style.display = 'block';
+  element.style.borderColor = 'var(--error-color)';
+}
+
 // 住所自動入力
 async function lookupAddress() {
   const zip = document.querySelector('[name="postcode"]').value.replace(/-/g, '');
@@ -640,7 +701,7 @@ async function lookupAddress() {
 async function saveData() {
   const formData = {};
   const inputs = document.querySelectorAll('input, select, textarea');
-  
+
   for (const element of inputs) {
     if (element.type === 'file') {
       formData[element.name] = element.files[0] ? await toBase64(element.files[0]) : '';
@@ -648,7 +709,7 @@ async function saveData() {
       formData[element.name] = element.value;
     }
   }
-  
+
   localStorage.setItem(LS_KEY, JSON.stringify(formData));
 }
 
@@ -677,7 +738,7 @@ function loadData() {
 async function handleSubmit(e) {
   e.preventDefault();
   const submitBtn = document.querySelector('button[type="submit"]');
-  
+
   try {
     submitBtn.disabled = true;
     submitBtn.textContent = "送信中...";
@@ -688,7 +749,7 @@ async function handleSubmit(e) {
       });
     });
 
-    const formData = new FormData(this);
+    const formData = new FormData(e.target);
     formData.append('g-recaptcha-response', recaptchaToken);
 
     const res = await fetch('https://script.google.com/macros/s/AKfycby0jf5b9wfSdTrIvUDCEAPNiYpDLSOvEZ5Floo-Qif6ZQJZ1b7dSGc2LVYDE1Wp8LebvA/exec', {
@@ -720,7 +781,7 @@ async function handleSubmit(e) {
 function init() {
   loadData();
   updateStep();
-  
+
   // ネットワーク監視
   const updateNetworkStatus = () => {
     const statusEl = document.getElementById('networkStatus');
