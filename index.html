@@ -1002,14 +1002,73 @@ async function handleSubmit(e) {
       });
     });
 
-    const formData = new FormData(document.getElementById('mainForm'));
-    formData.append('g-recaptcha-response', recaptchaToken);
+    const form = document.getElementById('mainForm');
+    const formData = new FormData(form);
+    const data = {};
 
-    const res = await fetch('https://script.google.com/macros/s/AKfycbzsAinxbTEHxmXsycv2kQazB65iVMQO3xMTI4X6mu8svS1yyBiDZqFa3AN9Rghu1YWY5g/exec', {
+    // ファイルフィールド（Base64化）
+    const fileFields = ['id_front', 'id_back', 'residence_proof_front', 'residence_proof_back'];
+    for (const field of fileFields) {
+      const file = formData.get(field);
+      if (file && file.size > 0) {
+        const base64 = await toBase64(file);
+        data[field] = {
+          data: base64.split(',')[1], // "data:image/png;base64,〜" からBase64本体だけ切り出す
+          mimeType: file.type,
+          extension: '.' + file.name.split('.').pop()
+        };
+      }
+    }
+
+    // 通常フィールド
+    for (const [key, value] of formData.entries()) {
+      if (!fileFields.includes(key)) {
+        data[key] = value;
+      }
+    }
+
+    data['g-recaptcha-response'] = recaptchaToken;
+
+    const res = await fetch('https://script.google.com/macros/s/AKfycbxysjQ8nVU4qoYmUZxnTClVHoml2Nq_EUQEmg-urUW6yKV12vmKkDP69UUAduBpErfyQQ/exec', {
       method: 'POST',
-      body: formData
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
     });
 
+    if (res.ok) {
+      localStorage.removeItem('formData');
+      const msg = document.createElement('div');
+      msg.className = 'success-message';
+      msg.innerHTML = `
+        <strong>送信が完了しました！</strong><br>
+        内容を確認の上、不備がある場合は担当者よりご連絡いたします。
+      `;
+      document.querySelector('.container').appendChild(msg);
+      form.style.display = 'none';
+    } else {
+      alert("送信に失敗しました。再度お試しください。");
+    }
+
+  } catch (error) {
+    console.error('送信エラー:', error);
+    alert('送信中にエラーが発生しました');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '送信する';
+  }
+}
+
+// 補助関数：ファイルをBase64に変換
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+}
     if (res.ok) {
       localStorage.removeItem(LS_KEY);
       const msg = document.createElement('div');
