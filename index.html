@@ -1031,9 +1031,10 @@ async function handleSubmit(e) {
     data['g-recaptcha-response'] = recaptchaToken;
 
     const res = await fetch('https://script.google.com/macros/s/AKfycbzpETt9xvPEv-CV41qhuV0KSIHYAE8wvCcxk7kBAsNZsIGFmS3MatN_jpBCli4NfEG4Cw/exec', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(data),
+  mode: 'cors'
     });
 
     if (res.ok) {
