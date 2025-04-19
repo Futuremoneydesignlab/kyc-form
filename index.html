@@ -1005,7 +1005,7 @@ async function handleSubmit(e) {
     const formData = new FormData(document.getElementById('mainForm'));
     formData.append('g-recaptcha-response', recaptchaToken);
 
-    const res = await fetch('https://script.google.com/macros/s/AKfycby0jf5b9wfSdTrIvUDCEAPNiYpDLSOvEZ5Floo-Qif6ZQJZ1b7dSGc2LVYDE1Wp8LebvA/exec', {
+    const res = await fetch('https://script.google.com/macros/s/AKfycbzsAinxbTEHxmXsycv2kQazB65iVMQO3xMTI4X6mu8svS1yyBiDZqFa3AN9Rghu1YWY5g/exec', {
       method: 'POST',
       body: formData
     });
