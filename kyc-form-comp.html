@@ -85,6 +85,13 @@ input:invalid, select:invalid { border-color: var(--error-color); }
       <label>マイナンバー<input type="text" name="my_number"></label>
       <label>身分証明書（表）<input type="file" name="id_front" accept="image/*"></label>
       <label>身分証明書（裏）<input type="file" name="id_back" accept="image/*"></label>
+<label>住居証明書（表）<input type="file" name="residence_proof_front" accept="image/*,application/pdf"></label>
+<label>住居証明書（裏）<input type="file" name="residence_proof_back" accept="image/*,application/pdf"></label>
+<p style="font-size: 0.85em; color: #555; margin-top: 20px;">
+  ご提出いただく書類データ（身分証・住居証明等）は、個人情報保護法および関連法令に基づき、厳重に管理いたします。<br>
+  当フォームはSSL暗号化通信により保護されており、収集されたデータは本人確認・所定の審査目的にのみ使用され、目的外の利用・第三者提供は一切行いません。
+</p>
+
       <div class="button-group"><button type="button" class="prev-btn" onclick="prevStep()">戻る</button><button type="button" class="next-btn" onclick="nextStep()">次へ</button></div>
     </div>
 
@@ -412,6 +419,52 @@ input:invalid, select:invalid { border-color: var(--error-color); }
       <li>不備または虚偽が判明した場合、30日以内に新たな自己証明書を提出し、必要な税務情報を関連当局と共有することに同意します。</li>
     </ul>
   </div>
+<details style="margin-top: 25px; border: 1px solid #ccc; border-radius: 8px; padding: 15px; background: #f9f9f9;">
+  <summary style="cursor: pointer; font-weight: bold; color: var(--primary-color); font-size: 16px;">
+    ▶ プライバシーポリシーを表示する
+  </summary>
+  <div style="margin-top: 15px; line-height: 1.8; font-size: 14px;">
+    <h3>1. 個人情報の利用目的</h3>
+    <p>
+      本フォームで取得する個人情報は、以下の目的のために使用されます：<br>
+      ・本人確認、KYCプロセスの実施<br>
+      ・お申込み内容に基づく書類作成、商品契約手続き<br>
+      ・顧客対応、アフターサポート、緊急時の連絡<br>
+      ・法令に基づく記録・管理・報告の実施
+    </p>
+
+    <h3>2. 安全管理措置</h3>
+    <p>
+      取得した個人情報は、SSL暗号化通信による送信、アクセスログの管理、保存データの制限管理など、適切な技術的・組織的安全管理措置を講じたうえで取り扱います。
+    </p>
+
+    <h3>3. 委託・第三者提供について</h3>
+    <p>
+      個人情報は、業務委託先（書類作成代行、管理台帳運用等）に提供する場合がありますが、いずれも契約により適正な管理を義務付けています。<br>
+      また、本人の同意がある場合または法令に基づく場合を除き、第三者への提供は行いません。
+    </p>
+
+    <h3>4. 保管および削除</h3>
+    <p>
+      個人情報は、契約締結後または目的達成後、法定保管期間を除き、当社の定める安全な方法により消去・破棄されます。
+    </p>
+
+    <h3>5. 開示・訂正・削除のご請求</h3>
+    <p>
+      ご本人からのご請求により、保有する個人情報の開示・訂正・利用停止・削除に対応いたします。ご希望の方は下記よりご連絡ください。
+    </p>
+
+    <h3>6. お問い合わせ窓口</h3>
+    <p>
+      個人情報の取り扱いに関するご相談・苦情は以下のサポート窓口にて承ります。<br>
+      【お客様サポートLINE】<br>
+      → ご利用中のLINEチャットよりお問い合わせください。<br>
+      （受付時間：平日 10:00〜19:00／年末年始を除く）
+    </p>
+
+    <p style="margin-top: 10px;">制定日：2025年4月1日<br>改訂日：2025年4月19日</p>
+  </div>
+</details>
 
   <label><input type="checkbox" name="agreement" required> 上記の利用規約および宣誓内容に同意します</label>
 
@@ -443,7 +496,7 @@ function showSaveNotification(){const e=document.getElementById("networkStatus")
 window.addEventListener("DOMContentLoaded",()=>{restoreFormData(),updateProgress(),initNetworkMonitoring(),document.querySelectorAll("input, select, textarea").forEach(e=>{e.addEventListener("input",()=>{validateField(e),generatePreview();});}),generatePreview(),setInterval(saveFormData,3e4);});
 function validateField(e){const t=e.nextElementSibling;e.checkValidity()?(e.style.borderColor="#ddd",t&&(t.style.display="none")):(e.style.borderColor="var(--error-color)",t&&(t.style.display="block"));}
 window.addEventListener("beforeunload",e=>{document.querySelectorAll(":invalid").length>0&&(e.preventDefault(),e.returnValue="入力中のデータがあります");});
-document.getElementById("mainForm").addEventListener("submit",async e=>{e.preventDefault();if(validateStep(currentStep)){const t=document.querySelector('button[type="submit"]');t.disabled=!0,t.textContent="送信中...";try{const n=await new Promise((e,t)=>{grecaptcha.ready(()=>{grecaptcha.execute("6Ldt9BwrAAAAAFcxv593i86WyBKetcwrGdWecK09",{action:"submit"}).then(e).catch(t);});}),s=new FormData(document.getElementById("mainForm"));s.append("g-recaptcha-response",n);const o=await fetch("https://script.google.com/macros/s/AKfycbwWFkTq4vDjHst6Cg5PlrzKYdvglJmFy1HN-Vmojhk7yTVjAiioiI9x-w0csQELsIBW/exec",{method:"POST",body:s}),c=await o.json();if("success"===c.status){localStorage.removeItem("formData"),window.location.href="/thankyou.html";}else throw new Error(c.message||"送信失敗");}catch(e){console.error("送信エラー:",e),alert(`エラー: ${e.message}`);}finally{t.disabled=!1,t.textContent="送信する";}}});
+document.getElementById("mainForm").addEventListener("submit",async e=>{e.preventDefault();if(validateStep(currentStep)){const t=document.querySelector('button[type="submit"]');t.disabled=!0,t.textContent="送信中...";try{const n=await new Promise((e,t)=>{gtcha.ready(()=>{grecaptcha.execute("6Ldt9BwrAAAAAFcxv593i86WyBKetcwrGdWecK09",{action:"submit"}).then(e).catch(t);});}),s=new FormData(document.getElementById("mainForm"));s.append("g-recaptcha-response",n);const o=await fetch("https://script.google.com/macros/s/AKfycbxsxZHf-Jui8AcFGV45edJi1tRpnpKhURlbCm3DV6JaCAmWvzoUupQYFwj-LjoAxrvf/exec",{method:"POST",body:s}),c=await o.json();if("success"===c.status){localStorage.removeItem("formData"),window.location.href="/thankyou.html";}else throw new Error(c.message||"送信失敗");}catch(e){console.error("送信エラー:",e),alert(`エラー: ${e.message}`);}finally{t.disabled=!1,t.textContent="送信する";}}});
 </script>
 </body>
 </html>
