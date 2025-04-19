@@ -951,17 +951,23 @@ async function lookupAddress() {
 }
 
 async function saveData() {
-  const formData = {};
-  const inputs = document.querySelectorAll('input, select, textarea');
-  for (const element of inputs) {
-    if (element.type === 'file') {
-      formData[element.name] = element.files[0] ? await toBase64(element.files[0]) : '';
-    } else {
-      formData[element.name] = element.value;
+  try {
+    const formData = {};
+    const inputs = document.querySelectorAll('input, select, textarea');
+
+    for (const element of inputs) {
+      if (element.type !== 'file') {
+        formData[element.name] = element.value;
+      }
     }
+
+    localStorage.setItem(LS_KEY, JSON.stringify(formData));
+  } catch (error) {
+    console.error('保存エラー:', error);
+    localStorage.removeItem(LS_KEY);
   }
-  localStorage.setItem(LS_KEY, JSON.stringify(formData));
 }
+
 
 function toBase64(file) {
   return new Promise((resolve, reject) => {
