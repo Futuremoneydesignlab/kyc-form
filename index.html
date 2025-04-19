@@ -1030,7 +1030,7 @@ async function handleSubmit(e) {
 
     data['g-recaptcha-response'] = recaptchaToken;
 
-    const res = await fetch('https://script.google.com/macros/s/AKfycbzpETt9xvPEv-CV41qhuV0KSIHYAE8wvCcxk7kBAsNZsIGFmS3MatN_jpBCli4NfEG4Cw/exec', {
+    const res = await fetch('https://script.google.com/macros/s/AKfycbzK5BIbBS7nfZ6pJcZQmdlUkup_YsBdDd5XEDGWli7qzKTGf2rOkLkGdbTfdQGA68QUaw/exec', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(data),
