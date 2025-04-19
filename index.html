@@ -1060,26 +1060,6 @@ async function handleSubmit(e) {
   }
 }
 
-    if (res.ok) {
-      localStorage.removeItem(LS_KEY);
-      const msg = document.createElement('div');
-      msg.className = 'success-message';
-      msg.innerHTML = `
-        <strong>送信が完了しました！</strong><br>
-        内容を確認の上、不備がある場合は担当者よりご連絡いたします。
-      `;
-      document.querySelector('.container').appendChild(msg);
-      document.getElementById('mainForm').style.display = 'none';
-    }
-  } catch (error) {
-    console.error('送信エラー:', error);
-    alert('送信に失敗しました。再度お試しください。');
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = '送信する';
-  }
-}
-
 function smoothScroll() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
