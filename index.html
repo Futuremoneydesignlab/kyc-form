@@ -898,14 +898,12 @@ function validateStep(step) {
   let isValid = true;
   const stepEl = document.getElementById(`step${step}`);
   const inputs = stepEl.querySelectorAll('input, select, textarea');
-
   inputs.forEach(input => {
     if (input.required && !input.checkValidity()) {
       showValidationError(input);
       isValid = false;
     }
   });
-
   return isValid;
 }
 
@@ -955,7 +953,6 @@ async function lookupAddress() {
 async function saveData() {
   const formData = {};
   const inputs = document.querySelectorAll('input, select, textarea');
-
   for (const element of inputs) {
     if (element.type === 'file') {
       formData[element.name] = element.files[0] ? await toBase64(element.files[0]) : '';
@@ -991,6 +988,7 @@ function loadData() {
 async function handleSubmit(e) {
   e.preventDefault();
   const submitBtn = document.querySelector('button[type="submit"]');
+  const form = document.getElementById('mainForm');
 
   try {
     submitBtn.disabled = true;
@@ -1002,25 +1000,22 @@ async function handleSubmit(e) {
       });
     });
 
-    const form = document.getElementById('mainForm');
     const formData = new FormData(form);
     const data = {};
-
-    // ファイルフィールド（Base64化）
     const fileFields = ['id_front', 'id_back', 'residence_proof_front', 'residence_proof_back'];
+
     for (const field of fileFields) {
       const file = formData.get(field);
       if (file && file.size > 0) {
         const base64 = await toBase64(file);
         data[field] = {
-          data: base64.split(',')[1], // "data:image/png;base64,〜" からBase64本体だけ切り出す
+          data: base64.split(',')[1],
           mimeType: file.type,
           extension: '.' + file.name.split('.').pop()
         };
       }
     }
 
-    // 通常フィールド
     for (const [key, value] of formData.entries()) {
       if (!fileFields.includes(key)) {
         data[key] = value;
@@ -1031,20 +1026,15 @@ async function handleSubmit(e) {
 
     const res = await fetch('https://script.google.com/macros/s/AKfycbxysjQ8nVU4qoYmUZxnTClVHoml2Nq_EUQEmg-urUW6yKV12vmKkDP69UUAduBpErfyQQ/exec', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
 
     if (res.ok) {
-      localStorage.removeItem('formData');
+      localStorage.removeItem(LS_KEY);
       const msg = document.createElement('div');
       msg.className = 'success-message';
-      msg.innerHTML = `
-        <strong>送信が完了しました！</strong><br>
-        内容を確認の上、不備がある場合は担当者よりご連絡いたします。
-      `;
+      msg.innerHTML = `<strong>送信が完了しました！</strong><br>内容を確認の上、不備がある場合は担当者よりご連絡いたします。`;
       document.querySelector('.container').appendChild(msg);
       form.style.display = 'none';
     } else {
@@ -1090,7 +1080,6 @@ function createStepNavigation() {
     nav.appendChild(item);
   }
 }
-
 
 function gotoStep(step) {
   if (step >= 1 && step <= TOTAL_STEPS) {
