@@ -496,7 +496,37 @@ function showSaveNotification(){const e=document.getElementById("networkStatus")
 window.addEventListener("DOMContentLoaded",()=>{restoreFormData(),updateProgress(),initNetworkMonitoring(),document.querySelectorAll("input, select, textarea").forEach(e=>{e.addEventListener("input",()=>{validateField(e),generatePreview();});}),generatePreview(),setInterval(saveFormData,3e4);});
 function validateField(e){const t=e.nextElementSibling;e.checkValidity()?(e.style.borderColor="#ddd",t&&(t.style.display="none")):(e.style.borderColor="var(--error-color)",t&&(t.style.display="block"));}
 window.addEventListener("beforeunload",e=>{document.querySelectorAll(":invalid").length>0&&(e.preventDefault(),e.returnValue="入力中のデータがあります");});
-document.getElementById("mainForm").addEventListener("submit",async e=>{e.preventDefault();if(validateStep(currentStep)){const t=document.querySelector('button[type="submit"]');t.disabled=!0,t.textContent="送信中...";try{const n=await new Promise((e,t)=>{grecaptcha.ready(()=>{grecaptcha.execute("6Ldt9BwrAAAAAFcxv593i86WyBKetcwrGdWecK09",{action:"submit"}).then(e).catch(t);});}),s=new FormData(document.getElementById("mainForm"));s.append("g-recaptcha-response",n);const o=await fetch("https://script.google.com/macros/s/AKfycby0jf5b9wfSdTrIvUDCEAPNiYpDLSOvEZ5Floo-Qif6ZQJZ1b7dSGc2LVYDE1Wp8LebvA/exec",{method:"POST",body:s}),c=await o.json();if("success"===c.status){localStorage.removeItem("formData"),window.location.href="/thankyou.html";}else throw new Error(c.message||"送信失敗");}catch(e){console.error("送信エラー:",e),alert(`エラー: ${e.message}`);}finally{t.disabled=!1,t.textContent="送信する";}}});
+document.getElementById("mainForm").addEventListener("submit",async e=>{e.preventDefault();if(validateStep(currentStep)){const t=document.querySelector('button[type="submit"]');t.disabled=!0,t.textContent="送信中...";try{const n=await new Promise((e,t)=>{grecaptcha.ready(()=>{grecaptcha.execute("6Ldt9BwrAAAAAFcxv593i86WyBKetcwrGdWecK09",{action:"submit"}).then(e).catch(t);});}),s=new FormData(document.getElementById("mainForm"));s.append("g-recaptcha-response",n);try {
+  const o = await fetch("https://script.google.com/macros/s/AKfycby0jf5b9wfSdTrIvUDCEAPNiYpDLSOvEZ5Floo-Qif6ZQJZ1b7dSGc2LVYDE1Wp8LebvA/exec", {
+    method: "POST",
+    body: s
+  });
+  const c = await o.json();
+
+  if ("success" === c.status) {
+    localStorage.removeItem("formData");
+
+    const msg = document.createElement("div");
+    msg.innerHTML = `
+      <div style="background: #e0ffe0; color: #006600; padding: 20px; border-radius: 8px; margin-top: 30px; font-size: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        <strong>送信が完了しました！</strong><br>
+        内容を確認の上、不備がある場合は担当者よりご連絡いたします。
+      </div>
+    `;
+    document.querySelector(".container").appendChild(msg);
+    document.getElementById("mainForm").style.display = "none";
+  } else {
+    throw new Error(c.message || "送信失敗");
+  }
+  } catch (e) {
+    console.error("送信エラー:", e);
+    alert(`エラー: ${e.message}`);
+  } finally {
+    t.disabled = false;
+    t.textContent = "送信する";
+  }
+}  
+});
 </script>
 </body>
 </html>
