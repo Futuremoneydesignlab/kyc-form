@@ -1473,18 +1473,16 @@ function continueForm() {
 }
 
 function createStepNavigation() {
-  const nav = document.createElement('div');
-  nav.className = 'step-nav-header';
-
+  const nav = document.getElementById('stepHeaderNav');
   for (let i = 1; i <= TOTAL_STEPS; i++) {
-    const item = document.createElement('div');
+    const item = document.createElement('button');
     item.className = `step-nav-item ${i === 1 ? 'active' : ''}`;
     item.textContent = `STEP ${i}`;
     item.onclick = () => gotoStep(i);
     nav.appendChild(item);
   }
-  document.querySelector('header').appendChild(nav);
 }
+
 
 function gotoStep(step) {
   if (step >= 1 && step <= TOTAL_STEPS) {
