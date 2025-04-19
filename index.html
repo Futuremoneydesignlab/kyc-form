@@ -228,6 +228,32 @@ input:invalid, select:invalid, textarea:invalid {
   .step { padding: 1rem; }
   button { padding: 0.8rem; }
 }
+.step-header-nav {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-top: 0.5rem;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.step-header-nav button {
+  flex: 0 0 auto;
+  background: #ffffff;
+  border: 1px solid var(--secondary-color);
+  color: var(--secondary-color);
+  font-size: 0.75rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.step-header-nav button.active {
+  background: var(--secondary-color);
+  color: #fff;
+  font-weight: bold;
+}
 </style>
 
   <script src="https://www.google.com/recaptcha/api.js?render=6Ldt9BwrAAAAAFcxv593i86WyBKetcwrGdWecK09"></script>
@@ -236,6 +262,9 @@ input:invalid, select:invalid, textarea:invalid {
   <header>
     <h1>STEP <span id="current-step">1</span>/8</h1>
     <div class="progress-container"><div class="progress-bar"></div></div>
+  <h1>STEP <span id="current-step">1</span>/8</h1>
+  <div class="progress-container"><div class="progress-bar"></div></div>
+  <div class="step-header-nav" id="stepHeaderNav"></div>
   </header>
 
   <div class="container">
@@ -1245,7 +1274,7 @@ input:invalid, select:invalid, textarea:invalid {
     <button onclick="continueForm()">続きを入力する</button>
   </div>
 
-  <script>
+<script>
 const LS_KEY = 'formData';
 let currentStep = 1;
 const TOTAL_STEPS = 8;
@@ -1445,7 +1474,7 @@ function continueForm() {
 
 function createStepNavigation() {
   const nav = document.createElement('div');
-  nav.className = 'step-navigation';
+  nav.className = 'step-nav-header';
 
   for (let i = 1; i <= TOTAL_STEPS; i++) {
     const item = document.createElement('div');
@@ -1454,7 +1483,7 @@ function createStepNavigation() {
     item.onclick = () => gotoStep(i);
     nav.appendChild(item);
   }
-  document.body.appendChild(nav);
+  document.querySelector('header').appendChild(nav);
 }
 
 function gotoStep(step) {
@@ -1508,7 +1537,7 @@ window.addEventListener('beforeunload', (e) => {
     e.returnValue = '';
   }
 });
+</script>
 
-  </script>
 </body>
 </html>
