@@ -1,0 +1,94 @@
+body {
+  font-family: 'Helvetica Neue', sans-serif;
+  background: #f9f9f9;
+  color: #333;
+  margin: 0;
+  padding: 0 1rem;
+}
+
+form {
+  max-width: 768px;
+  margin: 2rem auto;
+  background: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  color: #2c3e50;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+  margin-top: 1.2rem;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 0.7rem;
+  margin-top: 0.3rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  background-color: #fff;
+}
+
+input[type="file"] {
+  padding: 0.3rem;
+}
+
+button[type="submit"] {
+  margin-top: 2rem;
+  padding: 0.9rem 1.5rem;
+  font-size: 1rem;
+  background-color: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+button[type="submit"]:hover {
+  background-color: #2980b9;
+}
+
+.form-step {
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.input-guide {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.3rem;
+}
+
+.policy-box summary {
+  font-weight: bold;
+  cursor: pointer;
+  background-color: #e9ecef;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+.policy-box[open] summary {
+  border-bottom: 1px solid #ccc;
+}
+
+.policy-content {
+  padding: 15px;
+  background: #fcfcfc;
+  border: 1px solid #ccc;
+  border-top: none;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
