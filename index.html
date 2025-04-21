@@ -5,13 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KYC申込フォーム</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://yubinbango.github.io/yubinbango/yubinbango.js"></script>
+  <script src="https://www.google.com/recaptcha/api.js?render=YOUR_RECAPTCHA_SITE_KEY"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script src="script.js" defer></script>
 </head>
 <body>
-  <form id="kycForm" onsubmit="return handleSubmit(event)">
+  <!-- ✅ ステップナビ付きのヘッダー -->
+  <header>
+    <h1>STEP <span id="current-step">1</span>/8</h1>
+    <div class="progress-container"><div class="progress-bar"></div></div>
+    <div class="step-header-nav" id="stepHeaderNav"></div>
+  </header>
 
+  <div class="container">
+    <form id="mainForm">
+      
     <!-- STEP1～STEP8までをここに順に配置 -->
     <!-- すでに提供済みのSTEP1〜STEP8の各コードをここにそのまま貼り付けてください -->
 <div class="form-step" id="step1">
@@ -334,25 +342,22 @@
   </label>
 </div>
 
-    <!-- 送信ボタン -->
-    <div class="form-step">
-      <button type="submit">申込内容を送信する</button>
-    </div>
-  </form>
+<div class="step" id="step8">
+        <!-- 最終ステップの送信ボタンだけ仮置き -->
+        <div class="button-group">
+          <button type="button" class="prev-btn" onclick="prevStep()">戻る</button>
+          <button type="submit" class="next-btn">送信する</button>
+        </div>
+      </div>
+    </form>
+  </div>
 
-  <script>
-    // JSTタイムスタンプ自動設定
-    window.addEventListener("DOMContentLoaded", () => {
-      const now = new Date();
-      const jst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-      document.getElementById("timestamp").value = jst.toISOString();
-    });
-
-    // 支払方法切り替え
-    function togglePaymentFields(value) {
-      document.getElementById("cardFields").style.display = value === "クレジットカード" ? "block" : "none";
-      document.getElementById("bankFields").style.display = value === "銀行振込" ? "block" : "none";
-    }
-  </script>
+  <!-- 離脱防止・ステータス表示など -->
+  <div id="networkStatus" class="network-status"></div>
+  <div class="exit-guard" id="exitGuard">
+    <h3>⏳ 入力中のデータが保存されています！</h3>
+    <p>最後まで続けると完了まであと<span id="remainingSteps"></span>ステップです</p>
+    <button onclick="continueForm()">続きを入力する</button>
+  </div>
 </body>
 </html>

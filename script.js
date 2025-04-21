@@ -1,84 +1,132 @@
-// AES暗号化（CryptoJS使用）
-function encryptAES(text) {
-  const key = CryptoJS.enc.Utf8.parse("1234567890123456");
-  const iv = CryptoJS.enc.Utf8.parse("1234567890123456");
-  const encrypted = CryptoJS.AES.encrypt(text, key, {
-    iv: iv,
-    mode: CryptoJS.mode.CBC,
-    padding: CryptoJS.pad.Pkcs7,
+// ✅ KYC申込フォームの機能統合スクリプト（新構成）
+const LS_KEY = 'formData';
+let currentStep = 1;
+const TOTAL_STEPS = 8;
+
+function updateStep() {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById(`step${currentStep}`).classList.add('active');
+  document.getElementById('current-step').textContent = currentStep;
+  document.querySelectorAll('.step-nav-item').forEach((el, idx) => {
+    el.classList.toggle('active', idx + 1 === currentStep);
   });
-  return encrypted.toString();
+  const progress = ((currentStep - 1) / (TOTAL_STEPS - 1)) * 100;
+  document.querySelector('.progress-bar').style.width = `${progress}%`;
+  saveData();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ファイルをBase64に変換
-function toBase64(file) {
+function nextStep() {
+  if (validateStep(currentStep)) {
+    currentStep++;
+    updateStep();
+  }
+}
+
+function prevStep() {
+  currentStep--;
+  updateStep();
+}
+
+function validateStep(step) {
+  const inputs = document.querySelectorAll(`#step${step} input, #step${step} select, #step${step} textarea`);
+  for (let input of inputs) {
+    if (!input.checkValidity()) {
+      input.reportValidity();
+      return false;
+    }
+  }
+  return true;
+}
+
+function createStepNavigation() {
+  const nav = document.getElementById('stepHeaderNav');
+  for (let i = 1; i <= TOTAL_STEPS; i++) {
+    const item = document.createElement('button');
+    item.className = `step-nav-item ${i === 1 ? 'active' : ''}`;
+    item.textContent = `STEP ${i}`;
+    item.onclick = () => { currentStep = i; updateStep(); };
+    nav.appendChild(item);
+  }
+}
+
+function saveData() {
+  const formData = {};
+  document.querySelectorAll('input, select, textarea').forEach(el => {
+    if (el.type !== 'file') {
+      formData[el.name] = el.value;
+    }
+  });
+  localStorage.setItem(LS_KEY, JSON.stringify(formData));
+}
+
+function loadData() {
+  const saved = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+  Object.entries(saved).forEach(([key, val]) => {
+    const el = document.querySelector(`[name="${key}"]`);
+    if (el) el.value = val;
+  });
+}
+
+async function toBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]); // base64のみ抽出
+    reader.onload = () => resolve(reader.result.split(',')[1]);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
 }
 
-// 送信処理
-async function handleSubmit(event) {
-  event.preventDefault();
+async function handleSubmit(e) {
+  e.preventDefault();
+  const form = document.getElementById('mainForm');
+  const data = {};
+  const files = ['id_front', 'id_back', 'residence_proof_front', 'residence_proof_back'];
 
-  const form = document.getElementById("kycForm");
-
-  // 同意チェック
-  const consent = document.querySelector('input[name="finalConsent"]');
-  if (!consent || !consent.checked) {
-    alert("プライバシーポリシーと宣誓内容に同意してください。");
-    return false;
-  }
-
-  // HTML5バリデーション
-  if (!form.checkValidity()) {
-    alert("未入力または不正な入力があります。ご確認ください。");
-    form.reportValidity();
-    return false;
-  }
-
-  const formData = new FormData(form);
-  const encryptedData = {};
-
-  for (const [key, value] of formData.entries()) {
-    if (value instanceof File && value.size > 0) {
-      const base64 = await toBase64(value);
-      encryptedData[key] = encryptAES(base64);
+  for (const [key, val] of new FormData(form).entries()) {
+    if (files.includes(key)) {
+      const file = form.querySelector(`[name="${key}"]`).files[0];
+      if (file) {
+        const base64 = await toBase64(file);
+        data[key] = CryptoJS.AES.encrypt(base64, "1234567890123456").toString();
+      }
     } else {
-      encryptedData[key] = encryptAES(value);
+      data[key] = CryptoJS.AES.encrypt(val, "1234567890123456").toString();
     }
   }
 
-  // Google Apps ScriptのURL
-  const endpoint = "YOUR_GAS_WEBAPP_URL"; // ←ここにGASのWeb App URLを記載
+  const token = await grecaptcha.execute('6Ldt9BwrAAAAAFcxv593i86WyBKetcwrGdWecK09', { action: 'submit' });
+  data['g-recaptcha-response'] = token;
 
-  try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(encryptedData),
-    });
+  const res = await fetch('https://script.google.com/macros/s/AKfycbxYI9tVSK10o6UA4DDQr65HaTmSPK-90-HRjEK9vBleeSd5WJXAsPPGWbaf24Ynuno7UA/exec', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
 
-    if (response.ok) {
-      alert("申込が正常に送信されました。ありがとうございました！");
-      form.reset();
-      window.scrollTo(0, 0);
-    } else {
-      alert("送信に失敗しました。もう一度お試しください。");
-    }
-  } catch (error) {
-    console.error("送信エラー:", error);
-    alert("ネットワークエラーが発生しました。");
+  if (res.ok) {
+    alert('送信が完了しました。ありがとうございました。');
+    localStorage.removeItem(LS_KEY);
+    form.reset();
+    location.reload();
+  } else {
+    alert('送信に失敗しました。時間をおいて再度お試しください。');
   }
-
-  return false;
 }
 
-// 支払方法切り替え（クレカ or 銀行）
 function togglePaymentFields(value) {
-  document.getElementById("cardFields").style.display = value === "クレジットカード" ? "block" : "none";
-  document.getElementById("bankFields").style.display = value === "銀行振込" ? "block" : "none";
+  const cardFields = document.getElementById("cardFields");
+  const bankFields = document.getElementById("bankFields");
+  if (cardFields) cardFields.style.display = value === "クレジットカード" ? "block" : "none";
+  if (bankFields) bankFields.style.display = value === "銀行振込" ? "block" : "none";
 }
+
+function init() {
+  loadData();
+  createStepNavigation();
+  updateStep();
+  document.getElementById('mainForm').addEventListener('submit', handleSubmit);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+
