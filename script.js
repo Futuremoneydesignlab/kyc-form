@@ -1,4 +1,4 @@
-// ✅ KYC申込フォームの機能統合スクリプト（新構成）
+// ✅ 完全統合KYCフォーム｜最終版 script.js
 const LS_KEY = 'formData';
 let currentStep = 1;
 const TOTAL_STEPS = 8;
@@ -7,13 +7,15 @@ function updateStep() {
   document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
   document.getElementById(`step${currentStep}`).classList.add('active');
   document.getElementById('current-step').textContent = currentStep;
-  document.querySelectorAll('.step-nav-item').forEach((el, idx) => {
-    el.classList.toggle('active', idx + 1 === currentStep);
-  });
-  const progress = ((currentStep - 1) / (TOTAL_STEPS - 1)) * 100;
-  document.querySelector('.progress-bar').style.width = `${progress}%`;
+  updateProgress();
+  updateNavigation();
   saveData();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateProgress() {
+  const progress = ((currentStep - 1) / (TOTAL_STEPS - 1)) * 100;
+  document.querySelector('.progress-bar').style.width = `${progress}%`;
 }
 
 function nextStep() {
@@ -24,8 +26,10 @@ function nextStep() {
 }
 
 function prevStep() {
-  currentStep--;
-  updateStep();
+  if (currentStep > 1) {
+    currentStep--;
+    updateStep();
+  }
 }
 
 function validateStep(step) {
@@ -33,10 +37,26 @@ function validateStep(step) {
   for (let input of inputs) {
     if (!input.checkValidity()) {
       input.reportValidity();
+      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return false;
     }
   }
   return true;
+}
+
+function updateNavigation() {
+  document.querySelectorAll('.step-nav-item').forEach((item, index) => {
+    const stepIndex = index + 1;
+    item.classList.toggle('active', stepIndex === currentStep);
+
+    const inputs = document.querySelectorAll(`#step${stepIndex} input, #step${stepIndex} select, #step${stepIndex} textarea`);
+    const isComplete = Array.from(inputs).every(input => {
+      if (!input.required) return true;
+      return input.value && input.checkValidity();
+    });
+
+    item.innerHTML = isComplete ? `✅ STEP ${stepIndex}` : `STEP ${stepIndex}`;
+  });
 }
 
 function createStepNavigation() {
@@ -66,6 +86,21 @@ function loadData() {
     const el = document.querySelector(`[name="${key}"]`);
     if (el) el.value = val;
   });
+}
+
+function checkResumeOption() {
+  const saved = localStorage.getItem(LS_KEY);
+  if (saved) {
+    const banner = document.getElementById('resumeBanner');
+    if (banner) banner.style.display = 'block';
+  }
+}
+
+function resumeSavedData() {
+  loadData();
+  const banner = document.getElementById('resumeBanner');
+  if (banner) banner.style.display = 'none';
+  updateStep();
 }
 
 async function toBase64(file) {
@@ -114,19 +149,15 @@ async function handleSubmit(e) {
   }
 }
 
-function togglePaymentFields(value) {
-  const cardFields = document.getElementById("cardFields");
-  const bankFields = document.getElementById("bankFields");
-  if (cardFields) cardFields.style.display = value === "クレジットカード" ? "block" : "none";
-  if (bankFields) bankFields.style.display = value === "銀行振込" ? "block" : "none";
-}
-
 function init() {
-  loadData();
+  checkResumeOption();
   createStepNavigation();
+  loadData();
   updateStep();
   document.getElementById('mainForm').addEventListener('submit', handleSubmit);
+  document.querySelectorAll('input, select, textarea').forEach(el => {
+    el.addEventListener('input', saveData);
+  });
 }
 
 document.addEventListener('DOMContentLoaded', init);
-
