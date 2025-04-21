@@ -1,8 +1,9 @@
-// ✅ script.js｜iframe対応版（CORS回避・UI/UX維持）
-
+// ✅ script.js｜完全統合KYCフォーム（最終整理版）
 const LS_KEY = 'formData';
 let currentStep = 1;
 const TOTAL_STEPS = 8;
+const AES_KEY = CryptoJS.enc.Utf8.parse("1234567890123456");
+const AES_IV = CryptoJS.enc.Utf8.parse("1234567890123456");
 
 function updateStep() {
   document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
@@ -49,13 +50,8 @@ function updateNavigation() {
   document.querySelectorAll('.step-nav-item').forEach((item, index) => {
     const stepIndex = index + 1;
     item.classList.toggle('active', stepIndex === currentStep);
-
     const inputs = document.querySelectorAll(`#step${stepIndex} input, #step${stepIndex} select, #step${stepIndex} textarea`);
-    const isComplete = Array.from(inputs).every(input => {
-      if (!input.required) return true;
-      return input.value && input.checkValidity();
-    });
-
+    const isComplete = Array.from(inputs).every(input => !input.required || (input.value && input.checkValidity()));
     item.innerHTML = isComplete ? `✅ STEP ${stepIndex}` : `STEP ${stepIndex}`;
   });
 }
@@ -74,9 +70,7 @@ function createStepNavigation() {
 function saveData() {
   const formData = {};
   document.querySelectorAll('input, select, textarea').forEach(el => {
-    if (el.type !== 'file') {
-      formData[el.name] = el.value;
-    }
+    if (el.type !== 'file') formData[el.name] = el.value;
   });
   localStorage.setItem(LS_KEY, JSON.stringify(formData));
 }
@@ -89,32 +83,102 @@ function loadData() {
   });
 }
 
-function handleIframeSubmit() {
-  const form = document.getElementById('mainForm');
-  if (!validateStep(currentStep)) return false;
-  document.querySelector('.next-btn[type="submit"]').disabled = true;
-  return true; // iframeが送信を処理
+function checkResumeOption() {
+  const saved = localStorage.getItem(LS_KEY);
+  if (saved) document.getElementById('exitGuard').style.display = 'block';
 }
 
-function init() {
+function continueForm() {
+  document.getElementById('exitGuard').style.display = 'none';
+  updateStep();
+}
+
+async function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleSubmit(e) {
+  e.preventDefault();
+  const form = document.getElementById('mainForm');
+  const data = {};
+  const fileFields = ['id_front', 'id_back', 'residence_proof_front', 'residence_proof_back'];
+
+  for (const [key, val] of new FormData(form).entries()) {
+    if (fileFields.includes(key)) {
+      const file = form.querySelector(`[name="${key}"]`).files[0];
+      if (file) {
+        const base64 = await toBase64(file);
+        data[key] = CryptoJS.AES.encrypt(base64, AES_KEY, { iv: AES_IV, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }).toString();
+      }
+    } else {
+      data[key] = CryptoJS.AES.encrypt(val, AES_KEY, { iv: AES_IV, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }).toString();
+    }
+  }
+
+  const token = await grecaptcha.execute('6Ldt9BwrAAAAAFcxv593i86WyBKetcwrGdWecK09', { action: 'submit' });
+  data['g-recaptcha-response'] = token;
+
+  const res = await fetch('https://script.google.com/macros/s/AKfycbwxsWBjAGt6yvPBbEhoJwKeCrwk9ERKfIYZ-8nmjFxfc64OQ1L2DwTprQhDt2AfP9d5/exec', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+
+  if (res.ok) {
+    alert('送信が完了しました。ありがとうございました。');
+    localStorage.removeItem(LS_KEY);
+    form.reset();
+    location.reload();
+  } else {
+    alert('送信に失敗しました。時間をおいて再度お試しください。');
+  }
+}
+
+// ✅ タッチデバイス対応など
+function initTouchEvents() {
+  let startY;
+  document.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    const currentY = e.touches[0].clientY;
+    if (Math.abs(currentY - startY) < 10) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  document.querySelectorAll('input, select, textarea').forEach(el => {
+    el.addEventListener('focus', () => {
+      setTimeout(() => {
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }, 300);
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  checkResumeOption();
   createStepNavigation();
   loadData();
   updateStep();
-  document.querySelectorAll('input, select, textarea').forEach(el => {
-    el.addEventListener('input', saveData);
-  });
+  document.getElementById('mainForm').addEventListener('submit', handleSubmit);
+  document.querySelectorAll('input, select, textarea').forEach(el => el.addEventListener('input', saveData));
+  initTouchEvents();
 
-  const iframe = document.createElement('iframe');
-  iframe.name = 'hidden-iframe';
-  iframe.style.display = 'none';
-  document.body.appendChild(iframe);
+  // 📱 モバイル最適化（visualViewport安全に利用）
+  const viewport = document.querySelector('meta[name="viewport"]');
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      viewport.content = (window.visualViewport.height < window.innerHeight * 0.7)
+        ? 'width=device-width, initial-scale=1.0, shrink-to-fit=yes'
+        : 'width=device-width, initial-scale=1.0';
+    });
+  }
+});
 
-  iframe.onload = () => {
-    alert('送信が完了しました。ありがとうございました。');
-    localStorage.removeItem(LS_KEY);
-    document.getElementById('mainForm').reset();
-    window.location.reload();
-  };
-}
-
-document.addEventListener('DOMContentLoaded', init);

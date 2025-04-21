@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2c3e50">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.webmanifest">
   <title>KYC申込フォーム</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://www.google.com/recaptcha/api.js?render=6Ldt9BwrAAAAAFcxv593i86WyBKetcwrGdWecK09"></script>
@@ -10,6 +14,11 @@
   <script src="script.js" defer></script>
 </head>
 <body>
+  <!-- ローディング表示 -->
+  <div id="loader" style="position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:9999;display:flex;align-items:center;justify-content:center;">
+    <div class="spinner"></div>
+  </div>
+
   <!-- ✅ ステップナビ付きのヘッダー -->
   <header>
     <h1>STEP <span id="current-step">1</span>/8</h1>
@@ -17,9 +26,10 @@
     <div class="step-header-nav" id="stepHeaderNav"></div>
   </header>
 
+  <!-- メインフォームラップ -->
   <div class="container">
-    <form id="mainForm" action="https://script.google.com/macros/s/AKfycbyuGREhkF5oPl0m9BB1WSnu86grx_dfEJ-x1R1YTKbdlL4y5JAMSB1Witb0Sb57Dh_xWA/exec" method="POST" target="hidden-iframe" onsubmit="return handleIframeSubmit()">
-      <!-- STEP1～STEP8 をここに配置してください -->
+    <form id="mainForm">
+      <!-- 🔽 STEP1～STEP8の各セクションをここに挿入（省略） -->
 <div class="step active" id="step1">
   <h2>STEP1｜基本情報の入力</h2>
   <div class="time-estimate">推定所要時間: 2分</div>
@@ -598,7 +608,619 @@
     </form>
   </div>
 
-  <!-- 離脱防止・ステータス表示など -->
+  <div id="networkStatus" class="network-status"></div>
+  <div class="exit-guard" id="exitGuard">
+    <h3>⏳ 入力中のデータが保存されています！</h3>
+    <p>最後まで続けると完了まであと<span id="remainingSteps"></span>ステップです</p>
+    <button onclick="continueForm()">続きを入力する</button>
+  </div>
+</body>
+</html>
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KYC申込フォーム</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://www.google.com/recaptcha/api.js?render=6Ldt9BwrAAAAAFcxv593i86WyBKetcwrGdWecK09"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <!-- ✅ ステップナビ付きのヘッダー -->
+  <header>
+    <h1>STEP <span id="current-step">1</span>/8</h1>
+    <div class="progress-container"><div class="progress-bar"></div></div>
+    <div class="step-header-nav" id="stepHeaderNav"></div>
+  </header>
+
+  <div class="container">
+    <form id="mainForm" action="https://script.google.com/macros/s/AKfycbwxsWBjAGt6yvPBbEhoJwKeCrwk9ERKfIYZ-8nmjFxfc64OQ1L2DwTprQhDt2AfP9d5/exec" method="POST" target="hidden-iframe" onsubmit="return handleIframeSubmit()">
+      <!-- STEP1～STEP8 をここに配置してください -->
+<div class="step active" id="step1">
+  <h2>STEP1｜基本情報の入力</h2>
+  <div class="time-estimate">推定所要時間: 2分</div>
+
+  <label>担当者名
+    <input type="text" name="staff" required>
+    <span class="input-guide">※あなたを担当する紹介者やスタッフの氏名を入力してください</span>
+  </label>
+
+  <label>紹介コード
+    <input type="text" name="ref_code">
+    <span class="input-guide">※紹介コードがあれば入力してください（任意）</span>
+  </label>
+
+  <label>申込日
+    <input type="date" name="apply_date" required>
+    <span class="input-guide">※本フォームに記入した日付を入力してください</span>
+  </label>
+
+  <label>名
+    <input type="text" name="first_name" required>
+    <span class="input-guide">※下の名前（名）を記入してください</span>
+  </label>
+
+  <label>姓
+    <input type="text" name="last_name" required>
+    <span class="input-guide">※苗字（姓）を記入してください</span>
+  </label>
+
+  <label>メイ（カナ）
+    <input type="text" name="first_kana">
+    <span class="input-guide">※下の名前のカタカナ表記（例：タロウ）</span>
+  </label>
+
+  <label>セイ（カナ）
+    <input type="text" name="last_kana">
+    <span class="input-guide">※苗字のカタカナ表記（例：ヤマダ）</span>
+  </label>
+
+  <label>性別
+    <select name="gender" required>
+      <option value="">選択</option><option>男性</option><option>女性</option><option>その他</option>
+    </select>
+    <span class="input-guide">※ご自身の性別を選択してください</span>
+  </label>
+
+  <label>生年月日
+    <input type="date" name="birth" required>
+    <span class="input-guide">※西暦で入力してください（例：1990-01-01）</span>
+  </label>
+
+  <label>電話番号
+    <input type="tel" name="phone" required>
+    <span class="input-guide">※ハイフンなしでご入力ください（例：09012345678）</span>
+  </label>
+
+  <label>メールアドレス
+    <input type="email" name="email" required>
+    <span class="input-guide">※確認が届くメールアドレスを正確に入力してください</span>
+  </label>
+
+  <label>郵便番号
+    <input type="text" name="postcode" onblur="lookupAddress()" required>
+    <span class="input-guide">※7桁の郵便番号を入力してください（例：1234567）</span>
+  </label>
+
+  <label>都道府県
+    <input type="text" name="prefecture" required>
+    <span class="input-guide">※都道府県名を漢字で入力してください（例：東京都）</span>
+  </label>
+
+  <label>市区町村
+    <input type="text" name="city" required>
+    <span class="input-guide">※市区町村を正確に入力してください（例：渋谷区恵比寿）</span>
+  </label>
+
+  <label>番地
+    <input type="text" name="street" required>
+    <span class="input-guide">※丁目・番地・号までご記入ください（例：1-2-3）</span>
+  </label>
+
+  <label>建物名
+    <input type="text" name="building">
+    <span class="input-guide">※マンション・ビル名など（任意）</span>
+  </label>
+
+  <div class="button-group">
+    <button type="button" class="next-btn" onclick="nextStep()">次へ</button>
+  </div>
+</div>
+<div class="step" id="step2">
+  <h2>STEP2｜本人確認情報</h2>
+  <div class="time-estimate">推定所要時間: 2分</div>
+
+  <label>身分証の種類
+    <select name="id_type" required>
+      <option value="">選択</option>
+      <option>パスポート</option>
+      <option>運転免許証</option>
+      <option>マイナンバーカード</option>
+      <option>在留カード</option>
+    </select>
+    <span class="input-guide">※本人確認に使う書類を選択してください</span>
+  </label>
+
+  <label>身分証番号
+    <input type="text" name="id_number" required>
+    <span class="input-guide">※運転免許証番号など、書類に記載されている番号を入力</span>
+  </label>
+
+  <label>発行日
+    <input type="date" name="id_issue_date" required>
+    <span class="input-guide">※身分証に記載されている発行日</span>
+  </label>
+
+  <label>有効期限
+    <input type="date" name="id_expiry_date" required>
+    <span class="input-guide">※身分証の有効期限を入力</span>
+  </label>
+
+  <label>マイナンバー
+    <input type="text" name="my_number">
+    <span class="input-guide">※可能であれば入力（任意・12桁）</span>
+  </label>
+
+  <label>身分証明書（表）
+    <input type="file" name="id_front" accept="image/*">
+    <span class="input-guide">※身分証の表面画像をアップロード</span>
+  </label>
+
+  <label>身分証明書（裏）
+    <input type="file" name="id_back" accept="image/*">
+    <span class="input-guide">※裏面がある場合のみアップロード</span>
+  </label>
+
+  <label>住居証明書（表）
+    <input type="file" name="residence_proof_front" accept="image/*,application/pdf">
+    <span class="input-guide">※公共料金明細や住民票の画像・PDF</span>
+  </label>
+
+  <label>住居証明書（裏）
+    <input type="file" name="residence_proof_back" accept="image/*,application/pdf">
+    <span class="input-guide">※裏面がある場合のみ（任意）</span>
+  </label>
+
+  <p class="input-guide" style="margin-top: 1rem;">
+    ※アップロードされた書類は暗号化通信にて安全に提出されます。<br>
+    個人情報保護法に基づき厳重に管理され、目的外利用はされません。
+  </p>
+
+  <div class="button-group">
+    <button type="button" class="prev-btn" onclick="prevStep()">戻る</button>
+    <button type="button" class="next-btn" onclick="nextStep()">次へ</button>
+  </div>
+</div>
+<div class="step" id="step3">
+  <h2>STEP3｜勤務情報と資産背景</h2>
+  <div class="time-estimate">推定所要時間: 2分</div>
+
+  <label>勤務先名
+    <input type="text" name="employer_name" required>
+    <span class="input-guide">※法人名や屋号を正確にご記入ください（例：〇〇株式会社）</span>
+  </label>
+
+  <label>職業（業種）
+    <select name="job_industry" required>
+      <option value="">選択してください</option>
+      <option>金融・保険</option>
+      <option>IT・通信</option>
+      <option>医療・福祉</option>
+      <option>建設・不動産</option>
+      <option>製造・工業</option>
+      <option>運輸・物流</option>
+      <option>販売・サービス</option>
+      <option>公務員</option>
+      <option>その他</option>
+    </select>
+    <span class="input-guide">※ご自身の属する業界を選択してください</span>
+  </label>
+
+  <label>職業（役職）
+    <select name="job_position" required>
+      <option value="">選択してください</option>
+      <option>一般社員</option>
+      <option>主任・係長</option>
+      <option>課長・部長</option>
+      <option>役員</option>
+      <option>自営業</option>
+      <option>無職</option>
+      <option>その他</option>
+    </select>
+    <span class="input-guide">※現在の職位に最も近いものを選んでください</span>
+  </label>
+
+  <label>勤務先 郵便番号
+    <input type="text" name="employer_postcode" maxlength="7">
+    <span class="input-guide">※ハイフンなしの7桁で入力してください（例：1000001）</span>
+  </label>
+
+  <label>勤務先 都道府県
+    <input type="text" name="employer_prefecture">
+    <span class="input-guide">※例：東京都、大阪府など</span>
+  </label>
+
+  <label>勤務先 市区町村
+    <input type="text" name="employer_city">
+    <span class="input-guide">※例：千代田区丸の内、中央区銀座など</span>
+  </label>
+
+  <label>勤務先 番地
+    <input type="text" name="employer_street">
+    <span class="input-guide">※番地を正確に記入してください（例：1-1-1）</span>
+  </label>
+
+  <label>勤務先 建物名
+    <input type="text" name="employer_building">
+    <span class="input-guide">※ビル名やフロア等があれば記入（例：〇〇ビル3階）</span>
+  </label>
+
+  <label>年収（万円）
+    <input type="number" name="income" required>
+    <span class="input-guide">※年間の税込収入を半角数字で入力（例：500）</span>
+  </label>
+
+  <label>勤続年数（年）
+    <input type="number" name="years_of_service" required>
+    <span class="input-guide">※現在の勤務先での年数を半角数字で入力（例：3）</span>
+  </label>
+
+  <label>資金調達方法
+    <select name="fund_source" required>
+      <option value="">選択してください</option>
+      <option>給与所得</option>
+      <option>事業所得</option>
+      <option>不動産所得</option>
+      <option>相続・贈与</option>
+      <option>投資収益</option>
+      <option>退職金</option>
+      <option>その他</option>
+    </select>
+    <span class="input-guide">※今回の拠出金の主な原資をご選択ください</span>
+  </label>
+
+  <div class="button-group">
+    <button type="button" class="prev-btn" onclick="prevStep()">戻る</button>
+    <button type="button" class="next-btn" onclick="nextStep()">次へ</button>
+  </div>
+</div>
+<div class="step" id="step4">
+  <h2>STEP4｜投資内容・契約条件</h2>
+  <div class="time-estimate">推定所要時間: 2分</div>
+
+  <label>投資プラン
+    <select name="investment_plan" required>
+      <option value="">選択してください</option>
+      <option value="エボリューション">エボリューション</option>
+      <option value="S&P500">S&P500</option>
+      <option value="プラチナプラン">プラチナプラン</option>
+      <option value="確定利回りポートフォリオ">確定利回りポートフォリオ</option>
+      <option value="その他">その他</option>
+    </select>
+    <span class="input-guide">※ご提案されたプランを選択してください</span>
+  </label>
+
+  <label>投資期間（年）
+    <input type="number" name="investment_period" min="1" max="25" required>
+    <span class="input-guide">※基本は25年が推奨です。1〜25年の範囲で入力してください</span>
+  </label>
+
+  <label>年間（一括）拠出額（USD）
+    <input type="number" name="annual_amount" required>
+    <span class="input-guide">※年間または一括の拠出額を半角数字で入力（例：3600）</span>
+  </label>
+
+  <label>通貨
+    <select name="currency" required>
+      <option value="">選択してください</option>
+      <option value="USD">USD</option>
+      <option value="EUR">EUR</option>
+      <option value="GBP">GBP</option>
+    </select>
+    <span class="input-guide">※ご希望の通貨を選択（通常はUSD）</span>
+  </label>
+
+  <label>支払頻度
+    <select name="payment_frequency" required>
+      <option value="">選択してください</option>
+      <option value="年1回">年1回</option>
+      <option value="半年ごと">半年ごと</option>
+      <option value="四半期ごと">四半期ごと</option>
+      <option value="毎月">毎月</option>
+    </select>
+    <span class="input-guide">※ご希望の拠出頻度を選択（例：毎月など）</span>
+  </label>
+
+  <label>支払方法
+    <select name="payment_method" required>
+      <option value="">選択してください</option>
+      <option value="クレジットカード">クレジットカード</option>
+      <option value="銀行振込">銀行振込</option>
+    </select>
+    <span class="input-guide">※お支払い予定の方法を選択してください</span>
+  </label>
+
+  <label>カード種類（※カード払いの場合）
+    <select name="card_type">
+      <option value="">選択してください</option>
+      <option value="VISA">VISA</option>
+      <option value="MasterCard">MasterCard</option>
+      <option value="AMEX">AMEX</option>
+      <option value="JCB">JCB</option>
+    </select>
+    <span class="input-guide">※カード支払を選択した場合のみご記入ください</span>
+  </label>
+
+  <label>カード番号（※カード払いの場合）
+    <input type="text" name="card_number" maxlength="19">
+    <span class="input-guide">※カード番号を半角で入力（ハイフンなし）</span>
+  </label>
+
+  <label>カード有効期限（MM/YY）
+    <input type="text" name="card_expiry" placeholder="MM/YY">
+    <span class="input-guide">※例：12/30（MM/YY形式）で入力</span>
+  </label>
+
+  <div class="button-group">
+    <button type="button" class="prev-btn" onclick="prevStep()">戻る</button>
+    <button type="button" class="next-btn" onclick="nextStep()">次へ</button>
+  </div>
+</div>
+<div class="step" id="step5">
+  <h2>STEP5｜銀行情報・支払元確認</h2>
+  <div class="time-estimate">推定所要時間: 1〜2分</div>
+
+  <label>銀行名
+    <input type="text" name="bank_name" required>
+    <span class="input-guide">※お客様が使用される銀行の正式名称を入力（例：三菱UFJ銀行）</span>
+  </label>
+
+  <label>支店名または支店番号
+    <input type="text" name="branch_name" required>
+    <span class="input-guide">※例：渋谷支店 または 支店番号（123）</span>
+  </label>
+
+  <label>口座開設日
+    <input type="date" name="account_open_date">
+    <span class="input-guide">※任意。口座を開設した日を選択（分からない場合は空欄可）</span>
+  </label>
+
+  <label>口座名義（カタカナ）
+    <input type="text" name="account_holder_kana" required>
+    <span class="input-guide">※例：ナガツカ マキト（全角カタカナ）</span>
+  </label>
+
+  <label>口座番号
+    <input type="text" name="account_number" required>
+    <span class="input-guide">※半角数字のみ。ハイフンなど記号は不要（例：1234567）</span>
+  </label>
+
+  <label>年収（資金額）
+    <input type="number" name="account_income" required>
+    <span class="input-guide">※この口座に関連する主な年収額（万円単位）を入力してください</span>
+  </label>
+
+  <div class="button-group">
+    <button type="button" class="prev-btn" onclick="prevStep()">戻る</button>
+    <button type="button" class="next-btn" onclick="nextStep()">次へ</button>
+  </div>
+</div>
+<div class="step" id="step6">
+  <h2>STEP6｜受益者情報（任意）</h2>
+  <div class="time-estimate">推定所要時間: 1分（任意）</div>
+
+  <label>受益者氏名（名）
+    <input type="text" name="beneficiary_first_name">
+    <span class="input-guide">※受取人となる方の「下の名前」を入力（例：タロウ）</span>
+  </label>
+
+  <label>受益者氏名（姓）
+    <input type="text" name="beneficiary_last_name">
+    <span class="input-guide">※受取人となる方の「苗字」を入力（例：ヤマダ）</span>
+  </label>
+
+  <label>受益者フリガナ（メイ）
+    <input type="text" name="beneficiary_first_kana">
+    <span class="input-guide">※カタカナで「下の名前」（例：タロウ）</span>
+  </label>
+
+  <label>受益者フリガナ（セイ）
+    <input type="text" name="beneficiary_last_kana">
+    <span class="input-guide">※カタカナで「苗字」（例：ヤマダ）</span>
+  </label>
+
+  <label>性別
+    <select name="beneficiary_gender">
+      <option value="">選択してください</option>
+      <option value="男性">男性</option>
+      <option value="女性">女性</option>
+      <option value="その他">その他</option>
+    </select>
+    <span class="input-guide">※受益者の性別を選択してください</span>
+  </label>
+
+  <label>生年月日
+    <input type="date" name="beneficiary_birth">
+    <span class="input-guide">※西暦で入力（例：1980-05-20）</span>
+  </label>
+
+  <label>あなたとの関係
+    <select name="beneficiary_relation">
+      <option value="">選択してください</option>
+      <option value="配偶者">配偶者</option>
+      <option value="子">子</option>
+      <option value="親">親</option>
+      <option value="兄弟姉妹">兄弟姉妹</option>
+      <option value="その他">その他</option>
+    </select>
+    <span class="input-guide">※契約者とのご関係を選択してください</span>
+  </label>
+
+  <div class="button-group">
+    <button type="button" class="prev-btn" onclick="prevStep()">戻る</button>
+    <button type="button" class="next-btn" onclick="nextStep()">次へ</button>
+  </div>
+</div>
+<div class="step" id="step7">
+  <h2>STEP7｜医療・米国情報・PEPs確認</h2>
+  <div class="time-estimate">推定所要時間: 1分</div>
+
+  <label>1. 保険申込・査定で拒否または延期されたことはありますか？
+    <select name="q1_medical_decline" required>
+      <option value="">選択してください</option>
+      <option value="はい">はい</option>
+      <option value="いいえ">いいえ</option>
+    </select>
+    <span class="input-guide">※過去に他の保険で審査落ちや保留となった経験の有無を選択してください</span>
+  </label>
+
+  <label>2. 以下の病気に罹患・治療歴がありますか？（心臓・脳卒中・高血圧・腫瘍・癌・糖尿病など）
+    <select name="q2_serious_disease" required>
+      <option value="">選択してください</option>
+      <option value="はい">はい</option>
+      <option value="いいえ">いいえ</option>
+    </select>
+    <span class="input-guide">※重大疾患に関する既往歴があるかどうかを正直に選択してください</span>
+  </label>
+
+  <label>3. エイズまたはその関連症状の診断・治療歴はありますか？
+    <select name="q3_aids" required>
+      <option value="">選択してください</option>
+      <option value="はい">はい</option>
+      <option value="いいえ">いいえ</option>
+    </select>
+    <span class="input-guide">※エイズまたはその関連する疾患の治療・診断歴の有無を回答してください</span>
+  </label>
+
+  <label>4. 危険なスポーツや活動に参加したことがありますか？または参加予定がありますか？（例：スカイダイビング、自動車レース等）
+    <select name="q4_danger_sports" required>
+      <option value="">選択してください</option>
+      <option value="はい">はい</option>
+      <option value="いいえ">いいえ</option>
+    </select>
+    <span class="input-guide">※一般的に保険審査で考慮される危険行動の参加有無を選択してください</span>
+  </label>
+
+  <label>※ 上記のいずれかに「はい」と答えた場合は、かかりつけ医師の情報を記入してください。
+    <textarea name="doctor_contact" placeholder="氏名・住所・電話番号・FAXなど"></textarea>
+    <span class="input-guide">※必要な場合のみ入力してください。主治医の基本情報を記載</span>
+  </label>
+
+  <label>あなたは米国市民、または税務上の米国居住者ですか？
+    <select name="us_tax_resident" required>
+      <option value="">選択してください</option>
+      <option value="はい">はい</option>
+      <option value="いいえ">いいえ</option>
+    </select>
+    <span class="input-guide">※FATCA対応のために確認が必要です。米国に納税義務があるかどうかで選択</span>
+  </label>
+
+  <label>政府・国家元首・政治的に影響力のある人物またはその家族に該当しますか？
+    <select name="pep_status" required>
+      <option value="">選択してください</option>
+      <option value="はい">はい</option>
+      <option value="いいえ">いいえ</option>
+    </select>
+    <span class="input-guide">※PEPs（外国の重要な公的地位の人物）に該当するかを確認するための質問です</span>
+  </label>
+
+  <div class="button-group">
+    <button type="button" class="prev-btn" onclick="prevStep()">戻る</button>
+    <button type="button" class="next-btn" onclick="nextStep()">次へ</button>
+  </div>
+</div>
+<div class="step" id="step8">
+  <h2>STEP8｜利用規約・同意・送信確認</h2>
+  <div class="time-estimate">推定所要時間: 1分</div>
+
+  <div class="terms-box" style="margin-bottom: 20px; line-height: 1.8;">
+    <h3>＜個人情報保護方針＞</h3>
+    <ul>
+      <li>1. 本申込書にていただいた個人情報は、申込とお取引いただいた会社のアフターサービス・ご案内にのみ使用します。</li>
+      <li>2. 本申込書にていただいた個人情報は、適正に管理・保護し、目的以外の利用や第三者への情報提供は行いません。</li>
+      <li>3. いただいた個人情報の照会、修正、削除については、担当者にお問い合わせください。</li>
+    </ul>
+
+    <h3 style="margin-top: 20px;">＜宣誓＞</h3>
+    <ul>
+      <li>1. 私は、自主的にITA International Holdingsが販売する商品へ投資することを確認いたします。</li>
+      <li>2. 私は、契約書作成に伴う上記個人情報の転記等を了解いたします。</li>
+      <li>3. 私は、このフォームに記載した情報には不備がなく、虚偽がないことを宣誓します。</li>
+      <li>不備または虚偽が判明した場合、30日以内に新たな自己証明書を提出し、必要な税務情報を関連当局と共有することに同意します。</li>
+    </ul>
+  </div>
+
+  <details style="margin-top: 25px; border: 1px solid #ccc; border-radius: 8px; padding: 15px; background: #f9f9f9;">
+    <summary style="cursor: pointer; font-weight: bold; color: var(--primary-color); font-size: 16px;">
+      ▶ プライバシーポリシーを表示する
+    </summary>
+    <div style="margin-top: 15px; line-height: 1.8; font-size: 14px;">
+      <h3>1. 個人情報の利用目的</h3>
+      <p>
+        本フォームで取得する個人情報は、以下の目的のために使用されます：<br>
+        ・本人確認、KYCプロセスの実施<br>
+        ・お申込み内容に基づく書類作成、商品契約手続き<br>
+        ・顧客対応、アフターサポート、緊急時の連絡<br>
+        ・法令に基づく記録・管理・報告の実施
+      </p>
+
+      <h3>2. 安全管理措置</h3>
+      <p>
+        取得した個人情報は、SSL暗号化通信による送信、アクセスログの管理、保存データの制限管理など、
+        適切な技術的・組織的安全管理措置を講じたうえで取り扱います。
+      </p>
+
+      <h3>3. 委託・第三者提供について</h3>
+      <p>
+        個人情報は、業務委託先（書類作成代行、管理台帳運用等）に提供する場合がありますが、
+        契約により適正な管理を義務付けています。<br>
+        また、本人の同意がある場合または法令に基づく場合を除き、第三者への提供は行いません。
+      </p>
+
+      <h3>4. 保管および削除</h3>
+      <p>
+        個人情報は、契約締結後または目的達成後、法定保管期間を除き、
+        当社の定める安全な方法により消去・破棄されます。
+      </p>
+
+      <h3>5. 開示・訂正・削除のご請求</h3>
+      <p>
+        ご本人からのご請求により、保有する個人情報の開示・訂正・利用停止・削除に対応いたします。
+      </p>
+
+      <h3>6. お問い合わせ窓口</h3>
+      <p>
+        【お客様サポートLINE】<br>
+        → ご利用中のLINEチャットよりお問い合わせください。<br>
+        （受付時間：平日 10:00〜19:00／年末年始を除く）
+      </p>
+
+      <p style="margin-top: 10px;">制定日：2025年4月1日<br>改訂日：2025年4月19日</p>
+    </div>
+  </details>
+
+  <label>
+    <input type="checkbox" name="agreement" required>
+    上記の利用規約および宣誓内容に同意します
+    <span class="input-guide">※チェックしないと送信できません。必ず内容をご確認のうえ、同意のチェックをしてください。</span>
+  </label>
+
+  <div class="button-group" style="margin-top: 20px;">
+    <button type="button" class="prev-btn" onclick="prevStep()">戻る</button>
+    <button type="submit" class="next-btn">送信する</button>
+  </div>
+</div>
+    </form>
+  </div>
+
+  <!-- 離脱防止バナーなど -->
   <div id="networkStatus" class="network-status"></div>
   <div class="exit-guard" id="exitGuard">
     <h3>⏳ 入力中のデータが保存されています！</h3>
