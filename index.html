@@ -6,24 +6,29 @@
   <meta name="theme-color" content="#2c3e50" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- 🔹 PWA対応タグ -->
   <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon-192x192.png" />
+
   <title>KYC申込フォーム</title>
+
+  <!-- 🔹 CSS & Script -->
   <link rel="stylesheet" href="style.css" />
   <script src="https://www.google.com/recaptcha/api.js?render=your-site-key"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script src="script.js" defer></script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./service-worker.js')
-        .then(reg => console.log('✅ Service Worker 登録完了:', reg.scope))
-        .catch(err => console.error('❌ Service Worker 登録失敗:', err));
-    });
-  }
-<link rel="manifest" href="manifest.webmanifest" />
-<link rel="icon" href="icon-192x192.png" />
-<meta name="theme-color" content="#2c3e50" />
-</script>
+
+  <!-- 🔹 Service Worker登録 -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then(reg => console.log('✅ Service Worker 登録完了:', reg.scope))
+          .catch(err => console.error('❌ Service Worker 登録失敗:', err));
+      });
+    }
+  </script>
 </head>
 <body>
   <div id="loader" style="position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:9999;display:flex;align-items:center;justify-content:center;">
